@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "65287267077",
+    "project_id": "dormexchange",
+    "storage_bucket": "dormexchange.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:65287267077:android:4cc8a8465c1677163ccd6c",
+        "android_client_info": {
+          "package_name": "com.example.dorm_exchange"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBVZKpxLkOLqAuV80l3ZKxEoaUa_pNm3eg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:65287267077:android:f0353b7709e20ac83ccd6c",
+        "android_client_info": {
+          "package_name": "com.example.dormexchange"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBVZKpxLkOLqAuV80l3ZKxEoaUa_pNm3eg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
