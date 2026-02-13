@@ -1,0 +1,183 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ───────────────────────────────────────────────
+
+enum Role {
+  student
+  admin
+}
+
+enum ListingStatus {
+  active
+  sold
+  taken
+  deleted
+}
+
+enum ExchangeStatus {
+  pending
+  completed
+  cancelled
+  disputed
+}
+
+// ─── Users ───────────────────────────────────────────────
+
+model User {
+  id          String   @id @default(uuid()) @db.Uuid
+  firebaseUid String   @unique @map("firebase_uid")
+  email       String   @unique @db.VarChar(255)
+  name        String?  @db.VarChar(100)
+  role        Role     @default(student)
+  isVerified  Boolean  @default(false) @map("is_verified")
+  reportCount Int      @default(0) @map("report_count")
+  joinDate    DateTime @default(now()) @map("join_date")
+
+  // Relations
+  listings              Listing[]
+  initiatedConversations Conversation[] @relation("ConversationInitiator")
+  ownedConversations    Conversation[] @relation("ConversationOwner")
+  sentMessages          Message[]
+  sellExchanges         Exchange[]     @relation("ExchangeSeller")
+  buyExchanges          Exchange[]     @relation("ExchangeBuyer")
+  locationReviews       LocationReview[]
+
+  @@map("users")
+}
+
+// ─── Listings ────────────────────────────────────────────
+
+model Listing {
+  id          String        @id @default(uuid()) @db.Uuid
+  title       String        @db.VarChar(255)
+  description String?       @db.Text
+  imageUrl    String?       @map("image_url") @db.Text
+  price       Decimal?      @db.Decimal(10, 2)
+  isFree      Boolean       @default(false) @map("is_free")
+  category    String?       @db.VarChar(100)
+  status      ListingStatus @default(active)
+  createdBy   String        @map("created_by") @db.Uuid
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  creator       User           @relation(fields: [createdBy], references: [id])
+  conversations Conversation[]
+  exchanges     Exchange[]
+
+  @@index([createdBy])
+  @@index([status])
+  @@index([category])
+  @@map("listings")
+}
+
+// ─── Conversations ───────────────────────────────────────
+
+model Conversation {
+  id          String   @id @default(uuid()) @db.Uuid
+  listingId   String?  @map("listing_id") @db.Uuid
+  initiatorId String   @map("initiator_id") @db.Uuid
+  ownerId     String   @map("owner_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  listing   Listing?  @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  initiator User      @relation("ConversationInitiator", fields: [initiatorId], references: [id])
+  owner     User      @relation("ConversationOwner", fields: [ownerId], references: [id])
+  messages  Message[]
+  exchanges Exchange[]
+
+  @@unique([listingId, initiatorId, ownerId])
+  @@index([initiatorId])
+  @@index([ownerId])
+  @@index([updatedAt(sort: Desc)])
+  @@map("conversations")
+}
+
+// ─── Messages ────────────────────────────────────────────
+
+model Message {
+  id             String   @id @default(uuid()) @db.Uuid
+  conversationId String   @map("conversation_id") @db.Uuid
+  senderId       String   @map("sender_id") @db.Uuid
+  content        String   @db.Text
+  readStatus     Boolean  @default(false) @map("read_status")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  // Relations
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id])
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+  @@map("messages")
+}
+
+// ─── Exchanges ───────────────────────────────────────────
+
+model Exchange {
+  id             String         @id @default(uuid()) @db.Uuid
+  listingId      String         @map("listing_id") @db.Uuid
+  sellerId       String         @map("seller_id") @db.Uuid
+  buyerId        String         @map("buyer_id") @db.Uuid
+  conversationId String?        @map("conversation_id") @db.Uuid
+  locationId     String?        @map("location_id") @db.Uuid
+  status         ExchangeStatus @default(pending)
+  notes          String?        @db.Text
+  completedAt    DateTime?      @map("completed_at")
+  createdAt      DateTime       @default(now()) @map("created_at")
+
+  // Relations
+  listing      Listing       @relation(fields: [listingId], references: [id])
+  seller       User          @relation("ExchangeSeller", fields: [sellerId], references: [id])
+  buyer        User          @relation("ExchangeBuyer", fields: [buyerId], references: [id])
+  conversation Conversation? @relation(fields: [conversationId], references: [id])
+  location     Location?     @relation(fields: [locationId], references: [id])
+
+  @@index([listingId])
+  @@index([sellerId])
+  @@index([buyerId])
+  @@index([status])
+  @@map("exchanges")
+}
+
+// ─── Locations ───────────────────────────────────────────
+
+model Location {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(100)
+  lat       Float?
+  lng       Float?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  reviews   LocationReview[]
+  exchanges Exchange[]
+
+  @@map("locations")
+}
+
+// ─── Location Reviews ────────────────────────────────────
+
+model LocationReview {
+  id         String   @id @default(uuid()) @db.Uuid
+  locationId String   @map("location_id") @db.Uuid
+  reviewerId String   @map("reviewer_id") @db.Uuid
+  rating     Int
+  comment    String?  @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  location Location @relation(fields: [locationId], references: [id])
+  reviewer User     @relation(fields: [reviewerId], references: [id])
+
+  @@map("location_reviews")
+}
