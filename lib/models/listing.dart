@@ -1,5 +1,3 @@
-import 'user.dart';
-
 class ListingCreator {
   final String id;
   final String? name;

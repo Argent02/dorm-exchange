@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+
+import 'providers/auth_provider.dart';
 import 'login_screen.dart';
 import 'home_screen.dart';
 
@@ -8,16 +10,21 @@ class AuthGate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, snap) {
-        if (snap.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
-        }
-        final user = snap.data;
-        if (user == null) return const LoginScreen();
-        return const HomeScreen();
-      },
-    );
+    final auth = context.watch<AuthProvider>();
+
+    // Still determining auth state
+    if (auth.isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // Not authenticated — show login
+    if (!auth.isAuthenticated) {
+      return const LoginScreen();
+    }
+
+    // Authenticated and synced with backend
+    return const HomeScreen();
   }
 }
