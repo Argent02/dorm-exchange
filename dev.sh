@@ -9,7 +9,17 @@
 
 set -e
 
-DEVICE="${1:-}"
+# Load local device config (not tracked by git)
+if [ -f .dev.config ]; then
+  source .dev.config
+fi
+
+# Map friendly names to device IDs
+if [ "$1" = "iphone" ]; then
+  DEVICE="${IPHONE_DEVICE_ID:-iphone}"
+else
+  DEVICE="${1:-}"
+fi
 
 # ─── Colors ────────────────────────────────────────────────
 GREEN='\033[0;32m'

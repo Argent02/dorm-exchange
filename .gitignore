@@ -45,6 +45,9 @@ app.*.map.json
 /android/app/release
 
 # Backend
+# Local dev config (contains device IDs)
+.dev.config
+
 backend/node_modules/
 backend/dist/
 backend/.env
