@@ -46,6 +46,7 @@ app.*.map.json
 
 # Local dev config (contains device IDs)
 .dev.config
+.dev.config.ps1
 
 # Backend
 backend/node_modules/
