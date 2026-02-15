@@ -51,3 +51,4 @@ backend/.env
 backend/src/generated/
 *.serviceAccountKey.json
 serviceAccountKey.json
+*-firebase-adminsdk-*.json
