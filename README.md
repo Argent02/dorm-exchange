@@ -87,30 +87,10 @@ flutter pub get
 flutter run
 ```
 
-## API Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/health` | Health check |
-| POST | `/auth/login` | Verify Firebase token, create/return user |
-| GET | `/auth/me` | Get current user profile |
-| GET | `/listings` | List active listings (search, filter, paginate) |
-| GET | `/listings/:id` | Get single listing |
-| POST | `/listings` | Create a listing |
-| PUT | `/listings/:id` | Edit own listing |
-| PATCH | `/listings/:id/status` | Mark as sold/taken/deleted |
-| GET | `/users/me` | Current user profile with listings |
-| GET | `/users/:id` | Public user profile |
+### 5. API
+See `backend/src/routes/` for endpoint details.
 
-### Query Parameters for `GET /listings`
-
-| Param | Type | Description |
-|-------|------|-------------|
-| `search` | string | Search title and description |
-| `category` | string | Filter by category |
-| `isFree` | boolean | Filter free items only |
-| `page` | number | Page number (default: 1) |
-| `limit` | number | Items per page (default: 20, max: 50) |
 
 ## Useful Commands
 
