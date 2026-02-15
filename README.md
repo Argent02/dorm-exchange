@@ -1,6 +1,6 @@
 # DormExchange
 
-A mobile app for students to list, sell, or give away items to other students in their dorm — with built-in messaging and safe exchange locations.
+A mobile app for students to list, sell, or give away items to other students in their dorm with built-in messaging and safe exchange locations.
 
 ## Tech Stack
 
