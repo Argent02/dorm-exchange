@@ -28,8 +28,8 @@ app.get("/health", (_req, res) => {
 
 // ─── Start Server ────────────────────────────────────────
 
-app.listen(PORT, () => {
-  console.log(`DormExchange API running on http://localhost:${PORT}`);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`DormExchange API running on http://0.0.0.0:${PORT}`);
 });
 
 export default app;

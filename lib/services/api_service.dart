@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 
@@ -11,10 +13,25 @@ class ApiService {
   factory ApiService() => _instance;
   ApiService._internal();
 
-  // Base URL — localhost for dev, change to Railway URL for production.
-  // Android emulator uses 10.0.2.2 to reach host machine's localhost.
-  // iOS simulator and web use localhost directly.
-  static const String _baseUrl = 'http://localhost:3000';
+  // ─── Base URL Configuration ──────────────────────────────
+  // In release/production builds, point to your deployed server URL.
+  // In debug builds, pick the right address per platform:
+  //   - Physical device: use your Mac's local IP (same Wi-Fi network)
+  //   - Android emulator: 10.0.2.2 maps to host's localhost
+  //   - iOS simulator / macOS / web: localhost works directly
+  //
+  // Set your Mac's current IP here for physical device testing:
+  static const String _localIp = '10.0.0.72';
+  static const String _prodUrl = 'http://localhost:3000'; // TODO: replace with production URL
+
+  static String get _baseUrl {
+    if (kReleaseMode) return _prodUrl;
+    if (kIsWeb) return 'http://localhost:3000';
+    if (Platform.isAndroid) return 'http://10.0.2.2:3000';
+    if (Platform.isIOS) return 'http://$_localIp:3000';
+    // macOS, Windows, Linux — localhost works
+    return 'http://localhost:3000';
+  }
 
   // ─── Auth Header ─────────────────────────────────────────
 
