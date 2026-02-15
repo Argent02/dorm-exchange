@@ -2,11 +2,13 @@ class ListingCreator {
   final String id;
   final String? name;
   final String email;
+  final String? firebaseUid;
 
   ListingCreator({
     required this.id,
     this.name,
     required this.email,
+    this.firebaseUid,
   });
 
   factory ListingCreator.fromJson(Map<String, dynamic> json) {
@@ -14,6 +16,7 @@ class ListingCreator {
       id: json['id'] as String,
       name: json['name'] as String?,
       email: json['email'] as String,
+      firebaseUid: json['firebaseUid'] as String?,
     );
   }
 }

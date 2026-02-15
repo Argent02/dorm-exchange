@@ -85,7 +85,7 @@ router.get("/", async (req, res) => {
         where,
         include: {
           creator: {
-            select: { id: true, name: true, email: true },
+            select: { id: true, name: true, email: true, firebaseUid: true },
           },
         },
         orderBy: { createdAt: "desc" },
@@ -120,7 +120,7 @@ router.get("/:id", async (req, res) => {
       where: { id: req.params.id },
       include: {
         creator: {
-          select: { id: true, name: true, email: true, joinDate: true },
+          select: { id: true, name: true, email: true, joinDate: true, firebaseUid: true },
         },
       },
     });
@@ -165,7 +165,7 @@ router.post("/", async (req, res) => {
       },
       include: {
         creator: {
-          select: { id: true, name: true, email: true },
+          select: { id: true, name: true, email: true, firebaseUid: true },
         },
       },
     });
@@ -213,7 +213,7 @@ router.put("/:id", async (req, res) => {
       data: parsed.data,
       include: {
         creator: {
-          select: { id: true, name: true, email: true },
+          select: { id: true, name: true, email: true, firebaseUid: true },
         },
       },
     });

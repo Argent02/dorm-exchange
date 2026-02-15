@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 
 import authRoutes from "./routes/auth.js";
+import conversationsRoutes from "./routes/conversations.js";
 import listingsRoutes from "./routes/listings.js";
 import usersRoutes from "./routes/users.js";
 
@@ -29,6 +30,7 @@ app.use(express.json());
 // ─── Routes ──────────────────────────────────────────────
 
 app.use("/auth", authRoutes);
+app.use("/conversations", conversationsRoutes);
 app.use("/listings", listingsRoutes);
 app.use("/users", usersRoutes);
 

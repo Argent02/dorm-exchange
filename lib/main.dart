@@ -3,7 +3,10 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
+import 'theme/app_theme.dart';
 import 'providers/auth_provider.dart';
+import 'providers/grid_columns_provider.dart';
+import 'providers/listings_refresh_provider.dart';
 import 'auth_gate.dart';
 
 void main() async {
@@ -22,9 +25,12 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => GridColumnsProvider()),
+        ChangeNotifierProvider(create: (_) => ListingsRefreshProvider()),
       ],
       child: MaterialApp(
         title: 'Dorm Exchange',
+        theme: appTheme,
         home: const AuthGate(),
       ),
     );

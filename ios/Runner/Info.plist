@@ -45,6 +45,10 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Dorm Exchange needs camera access to take photos of items you are listing.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Dorm Exchange needs photo library access to add images to your listings.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>

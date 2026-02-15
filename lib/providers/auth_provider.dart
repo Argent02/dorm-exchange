@@ -84,6 +84,13 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Updates the user's profile and refreshes local state.
+  Future<void> updateProfile({String? name}) async {
+    if (_currentUser == null) return;
+    _currentUser = await _api.updateMe(name: name);
+    notifyListeners();
+  }
+
   /// Signs out from Firebase and clears local state.
   Future<void> signOut() async {
     await _firebaseAuth.signOut();

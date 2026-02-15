@@ -58,4 +58,28 @@ router.get("/me", requireAuth, requireUser, async (req, res) => {
   }
 });
 
+/**
+ * PATCH /auth/me
+ * Updates the current user's profile. Supports: name.
+ */
+router.patch("/me", requireAuth, requireUser, async (req, res) => {
+  try {
+    const body = req.body as Record<string, unknown>;
+    const updates: { name?: string } = {};
+    if (typeof body.name === "string" && body.name.trim().length > 0) {
+      updates.name = body.name.trim().slice(0, 100);
+    }
+
+    const user = await prisma.user.update({
+      where: { id: req.user!.id },
+      data: updates,
+    });
+
+    res.json({ user });
+  } catch (error) {
+    console.error("Update me error:", error);
+    res.status(500).json({ error: "Failed to update profile" });
+  }
+});
+
 export default router;

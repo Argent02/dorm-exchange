@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 
 import 'providers/auth_provider.dart';
 import 'login_screen.dart';
-import 'home_screen.dart';
+import 'main_shell.dart';
 
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
@@ -25,6 +25,6 @@ class AuthGate extends StatelessWidget {
     }
 
     // Authenticated and synced with backend
-    return const HomeScreen();
+    return const MainShell();
   }
 }

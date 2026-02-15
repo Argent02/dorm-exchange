@@ -4,8 +4,9 @@ import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 
-import '../models/user.dart';
+import '../models/conversation.dart';
 import '../models/listing.dart';
+import '../models/user.dart';
 
 class ApiService {
   // Singleton
@@ -121,6 +122,26 @@ class ApiService {
     return AppUser.fromJson(data['user'] as Map<String, dynamic>);
   }
 
+  /// Updates the current user's profile (e.g. name).
+  Future<AppUser> updateMe({String? name}) async {
+    final body = <String, dynamic>{};
+    if (name != null) body['name'] = name;
+    final data = await _patch('/auth/me', body: body.isNotEmpty ? body : null);
+    return AppUser.fromJson(data['user'] as Map<String, dynamic>);
+  }
+
+  /// Gets the current user's profile with their listings.
+  Future<({AppUser user, List<Listing> listings})> getMeWithListings() async {
+    final data = await _get('/auth/me');
+    final userJson = data['user'] as Map<String, dynamic>;
+    final user = AppUser.fromJson(userJson);
+    final listingsJson = userJson['listings'] as List<dynamic>? ?? [];
+    final listings = listingsJson
+        .map((e) => Listing.fromJson(e as Map<String, dynamic>))
+        .toList();
+    return (user: user, listings: listings);
+  }
+
   // ─── Listings Endpoints ──────────────────────────────────
 
   /// Fetches paginated listings with optional filters.
@@ -183,6 +204,40 @@ class ApiService {
       'status': status,
     });
     return Listing.fromJson(data['listing'] as Map<String, dynamic>);
+  }
+
+  // ─── Conversation Endpoints ──────────────────────────────
+
+  Future<List<Conversation>> getConversations() async {
+    final data = await _get('/conversations');
+    return (data['conversations'] as List<dynamic>)
+        .map((e) => Conversation.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<Conversation> getConversation(String id) async {
+    final data = await _get('/conversations/$id');
+    return Conversation.fromJson(data['conversation'] as Map<String, dynamic>);
+  }
+
+  Future<Conversation> createConversation({String? listingId, required String ownerId}) async {
+    final data = await _post('/conversations', body: {
+      if (listingId != null) 'listingId': listingId,
+      'ownerId': ownerId,
+    });
+    return Conversation.fromJson(data['conversation'] as Map<String, dynamic>);
+  }
+
+  Future<List<ConversationMessage>> getMessages(String conversationId) async {
+    final data = await _get('/conversations/$conversationId/messages');
+    return (data['messages'] as List<dynamic>)
+        .map((e) => ConversationMessage.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<ConversationMessage> sendMessage(String conversationId, String content) async {
+    final data = await _post('/conversations/$conversationId/messages', body: {'content': content});
+    return ConversationMessage.fromJson(data['message'] as Map<String, dynamic>);
   }
 
   // ─── User Endpoints ──────────────────────────────────────
