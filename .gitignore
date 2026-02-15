@@ -44,14 +44,26 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Backend
 # Local dev config (contains device IDs)
 .dev.config
 
+# Backend
 backend/node_modules/
 backend/dist/
 backend/.env
 backend/src/generated/
-*.serviceAccountKey.json
-serviceAccountKey.json
-*-firebase-adminsdk-*.json
+
+# Secrets — Firebase service account keys (any location, any name)
+**/serviceAccountKey*.json
+**/*-firebase-adminsdk-*.json
+**/*service-account*.json
+**/*ServiceAccount*.json
+
+# Firebase client config (contains project identifiers)
+lib/firebase_options.dart
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+
+# Generic secrets
+*.pem
+*.key

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Network security config for DormExchange.
+  Allows cleartext (HTTP) traffic to local dev servers.
+  For production, remove this or restrict to HTTPS only.
+-->
+<network-security-config>
+    <!-- Allow cleartext to localhost and private network IPs (dev only) -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">localhost</domain>
+        <domain includeSubdomains="false">10.0.2.2</domain>
+        <!-- Local network ranges for physical device testing -->
+        <domain includeSubdomains="true">10.0.0.0</domain>
+        <domain includeSubdomains="true">192.168.0.0</domain>
+        <domain includeSubdomains="true">172.16.0.0</domain>
+    </domain-config>
+</network-security-config>

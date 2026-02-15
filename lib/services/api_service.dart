@@ -16,11 +16,12 @@ class ApiService {
   // ─── Base URL Configuration ──────────────────────────────
   // In release/production builds, point to your deployed server URL.
   // In debug builds, pick the right address per platform:
-  //   - Physical device: use your Mac's local IP (same Wi-Fi network)
+  //   - Physical device: use your host machine's local IP (same Wi-Fi network)
   //   - Android emulator: 10.0.2.2 maps to host's localhost
   //   - iOS simulator / macOS / web: localhost works directly
   //
-  // Set your Mac's current IP here for physical device testing:
+  // Set your host machine's current IP here for physical device testing.
+  // The dev.sh script updates this automatically on each run.
   static const String _localIp = '10.0.0.72';
   static const String _prodUrl = 'http://localhost:3000'; // TODO: replace with production URL
 

@@ -6,6 +6,18 @@ import authRoutes from "./routes/auth.js";
 import listingsRoutes from "./routes/listings.js";
 import usersRoutes from "./routes/users.js";
 
+// ─── Validate Required Env Vars ──────────────────────────
+const requiredEnvVars = ["DATABASE_URL", "GOOGLE_APPLICATION_CREDENTIALS"] as const;
+for (const envVar of requiredEnvVars) {
+  if (!process.env[envVar]) {
+    console.error(
+      `\n✗ Missing required environment variable: ${envVar}\n` +
+      `  Copy backend/.env.example to backend/.env and fill in the values.\n`
+    );
+    process.exit(1);
+  }
+}
+
 const app = express();
 const PORT = parseInt(process.env.PORT || "3000", 10);
 
