@@ -1,0 +1,30 @@
+{
+  "rules": {
+    "conversations": {
+      "$conversationId": {
+        ".read": "auth != null && data.exists() && (data.child('initiatorUid').val() == auth.uid || data.child('ownerUid').val() == auth.uid)",
+        ".write": "auth != null && (newData.child('initiatorUid').val() == auth.uid || newData.child('ownerUid').val() == auth.uid)",
+        ".validate": "newData.hasChildren(['initiatorUid', 'ownerUid']) && newData.child('initiatorUid').isString() && newData.child('ownerUid').isString()"
+      },
+      ".indexOn": ["initiatorUid", "ownerUid", "updatedAt"]
+    },
+    "messages": {
+      "$conversationId": {
+        ".read": "auth != null && (root.child('conversations').child($conversationId).child('initiatorUid').val() == auth.uid || root.child('conversations').child($conversationId).child('ownerUid').val() == auth.uid)",
+        ".indexOn": ["createdAt", "senderUid"],
+        "$messageId": {
+          ".write": "auth != null && (root.child('conversations').child($conversationId).child('initiatorUid').val() == auth.uid || root.child('conversations').child($conversationId).child('ownerUid').val() == auth.uid) && newData.child('senderUid').val() == auth.uid",
+          ".validate": "newData.hasChildren(['content', 'senderUid', 'createdAt']) && newData.child('content').isString() && newData.child('senderUid').val() == auth.uid"
+        }
+      }
+    },
+    "typing": {
+      "$conversationId": {
+        "$userId": {
+          ".read": "auth != null && (root.child('conversations').child($conversationId).child('initiatorUid').val() == auth.uid || root.child('conversations').child($conversationId).child('ownerUid').val() == auth.uid)",
+          ".write": "auth != null && $userId == auth.uid"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,240 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../models/listing.dart';
+import '../providers/auth_provider.dart';
+import '../services/api_service.dart';
+import 'chat_screen.dart';
+
+class ListingDetailScreen extends StatefulWidget {
+  final String listingId;
+
+  const ListingDetailScreen({super.key, required this.listingId});
+
+  @override
+  State<ListingDetailScreen> createState() => _ListingDetailScreenState();
+}
+
+class _ListingDetailScreenState extends State<ListingDetailScreen> {
+  final ApiService _api = ApiService();
+  Listing? _listing;
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetch();
+  }
+
+  Future<void> _openChat(BuildContext context) async {
+    final listing = _listing!;
+    final creatorId = listing.creator?.id ?? listing.createdBy;
+    final myId = context.read<AuthProvider>().currentUser?.id;
+    if (myId == null || creatorId == myId) return;
+
+    try {
+      final conv = await _api.createConversation(
+        listingId: listing.id,
+        ownerId: creatorId,
+      );
+      if (context.mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ChatScreen(conversationId: conv.id),
+          ),
+        );
+      }
+    } on ApiException catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating),
+        );
+      }
+    }
+  }
+
+  Future<void> _fetch() async {
+    try {
+      final listing = await _api.getListing(widget.listingId);
+      if (mounted) setState(() {
+        _listing = listing;
+        _isLoading = false;
+      });
+    } on ApiException catch (e) {
+      if (mounted) setState(() {
+        _error = e.message;
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() {
+        _error = 'Could not load listing';
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Listing'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(_error!, textAlign: TextAlign.center),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _fetch,
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : _listing == null
+                  ? const SizedBox.shrink()
+                  : SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (_listing!.imageUrl != null && _listing!.imageUrl!.isNotEmpty)
+                            AspectRatio(
+                              aspectRatio: 16 / 9,
+                              child: Image.network(
+                                _listing!.imageUrl!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Container(
+                                  color: Colors.grey[200],
+                                  child: Icon(Icons.image_not_supported, size: 64, color: Colors.grey[400]),
+                                ),
+                              ),
+                            )
+                          else
+                            Container(
+                              height: 200,
+                              color: Colors.grey[200],
+                              child: Icon(Icons.image_not_supported, size: 64, color: Colors.grey[400]),
+                            ),
+                          Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (_listing!.isFree)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).colorScheme.secondary.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      'FREE',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Theme.of(context).colorScheme.secondary,
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  Text(
+                                    '\$${_listing!.price?.toStringAsFixed(2) ?? '0.00'}',
+                                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: Theme.of(context).colorScheme.primary,
+                                        ),
+                                  ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  _listing!.title,
+                                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                ),
+                                if (_listing!.category != null) ...[
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    _listing!.category!,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
+                                if (_listing!.description != null && _listing!.description!.isNotEmpty) ...[
+                                  const SizedBox(height: 20),
+                                  Text(
+                                    _listing!.description!,
+                                    style: Theme.of(context).textTheme.bodyLarge,
+                                  ),
+                                ],
+                                const SizedBox(height: 24),
+                                if (_listing!.creator != null)
+                                  Card(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Row(
+                                        children: [
+                                          CircleAvatar(
+                                            backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                                            child: Text(
+                                              (_listing!.creator!.name ?? _listing!.creator!.email)
+                                                  .substring(0, 1)
+                                                  .toUpperCase(),
+                                              style: TextStyle(
+                                                color: Theme.of(context).colorScheme.primary,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  _listing!.creator!.name ?? 'Seller',
+                                                  style: const TextStyle(
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize: 16,
+                                                  ),
+                                                ),
+                                                Text(
+                                                  _listing!.creator!.email,
+                                                  style: TextStyle(
+                                                    fontSize: 13,
+                                                    color: Colors.grey[600],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          OutlinedButton.icon(
+                                            onPressed: () => _openChat(context),
+                                            icon: const Icon(Icons.message, size: 18),
+                                            label: const Text('Message'),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+    );
+  }
+}
