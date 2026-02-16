@@ -38,7 +38,7 @@ class _MainShellState extends State<MainShell> {
         index: _index,
         children: _screens,
       ),
-      floatingActionButton: _index == 1 ? null : GlassContainer(
+      floatingActionButton: (_index == 1 || _index == 2) ? null : GlassContainer(
         padding: EdgeInsets.zero,
         margin: const EdgeInsets.only(bottom: 24),
         borderRadius: 28,

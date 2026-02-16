@@ -215,71 +215,65 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
         ),
       );
     }
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                "You don't have any listings...YET",
-                textAlign: TextAlign.center,
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w400,
-                  fontStyle: FontStyle.italic,
-                  color: Colors.white.withValues(alpha: 0.12),
-                  letterSpacing: 0.5,
-                  height: 1.3,
-                ),
-              ),
-            ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Spacer(flex: 2),
-              GlassContainer(
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
-                borderRadius: 16,
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const CreateListingScreen(),
-                      ),
-                    ).then((_) => _fetch()),
-                    borderRadius: BorderRadius.circular(16),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.add_circle_outline, color: Theme.of(context).colorScheme.primary, size: 24),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Post your first listing',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  "You don't have any listings...YET",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w400,
+                    fontStyle: FontStyle.italic,
+                    color: Colors.white.withValues(alpha: 0.12),
+                    letterSpacing: 0.5,
+                    height: 1.3,
                   ),
                 ),
               ),
-              const Spacer(flex: 2),
-            ],
-          ),
+            ),
+            const SizedBox(height: 48),
+            GlassContainer(
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+              borderRadius: 16,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const CreateListingScreen(),
+                    ),
+                  ).then((_) => _fetch()),
+                  borderRadius: BorderRadius.circular(16),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.add_circle_outline, color: Theme.of(context).colorScheme.primary, size: 24),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Post your first listing',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
