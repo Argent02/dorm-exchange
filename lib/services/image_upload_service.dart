@@ -37,4 +37,27 @@ class ImageUploadService {
     final url = await snapshot.ref.getDownloadURL();
     return url;
   }
+
+  /// Uploads a profile/avatar image and returns the public download URL.
+  /// Path: avatars/{userId}/{timestamp}.{ext}
+  Future<String> uploadProfileImage(File file) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) throw Exception('Not authenticated');
+
+    final ext = file.path.split('.').last.toLowerCase();
+    final sanitizedExt = ['jpg', 'jpeg', 'png', 'webp', 'heic'].contains(ext) ? ext : 'jpg';
+    final ref = _storage
+        .ref()
+        .child('avatars')
+        .child(user.uid)
+        .child('${DateTime.now().millisecondsSinceEpoch}.$sanitizedExt');
+
+    final task = ref.putFile(
+      file,
+      SettableMetadata(contentType: 'image/$sanitizedExt'),
+    );
+
+    final snapshot = await task;
+    return snapshot.ref.getDownloadURL();
+  }
 }

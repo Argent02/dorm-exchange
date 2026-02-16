@@ -3,6 +3,8 @@ class AppUser {
   final String firebaseUid;
   final String email;
   final String? name;
+  final String? avatarUrl;
+  final String? phone;
   final String role;
   final bool isVerified;
   final int reportCount;
@@ -13,6 +15,8 @@ class AppUser {
     required this.firebaseUid,
     required this.email,
     this.name,
+    this.avatarUrl,
+    this.phone,
     required this.role,
     required this.isVerified,
     required this.reportCount,
@@ -25,6 +29,8 @@ class AppUser {
       firebaseUid: json['firebaseUid'] as String,
       email: json['email'] as String,
       name: json['name'] as String?,
+      avatarUrl: json['avatarUrl'] as String?,
+      phone: json['phone'] as String?,
       role: json['role'] as String,
       isVerified: json['isVerified'] as bool,
       reportCount: json['reportCount'] as int,
@@ -38,6 +44,8 @@ class AppUser {
       'firebaseUid': firebaseUid,
       'email': email,
       'name': name,
+      'avatarUrl': avatarUrl,
+      'phone': phone,
       'role': role,
       'isVerified': isVerified,
       'reportCount': reportCount,

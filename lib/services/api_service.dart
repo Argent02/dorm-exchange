@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import '../models/conversation.dart';
 import '../models/exchange.dart';
 import '../models/listing.dart';
+import '../models/notification.dart';
 import '../models/user.dart';
 
 class ApiService {
@@ -123,10 +124,16 @@ class ApiService {
     return AppUser.fromJson(data['user'] as Map<String, dynamic>);
   }
 
-  /// Updates the current user's profile (e.g. name).
-  Future<AppUser> updateMe({String? name}) async {
+  /// Updates the current user's profile (name, avatarUrl, phone).
+  Future<AppUser> updateMe({
+    String? name,
+    String? avatarUrl,
+    String? phone,
+  }) async {
     final body = <String, dynamic>{};
     if (name != null) body['name'] = name;
+    if (avatarUrl != null) body['avatarUrl'] = avatarUrl;
+    if (phone != null) body['phone'] = phone;
     final data = await _patch('/auth/me', body: body.isNotEmpty ? body : null);
     return AppUser.fromJson(data['user'] as Map<String, dynamic>);
   }
@@ -269,6 +276,23 @@ class ApiService {
 
   Future<void> unsaveListing(String listingId) async {
     await _delete('/saved/$listingId');
+  }
+
+  // ─── Notifications Endpoints ─────────────────────────────
+
+  Future<List<AppNotification>> getNotifications() async {
+    final data = await _get('/notifications');
+    return (data['notifications'] as List<dynamic>)
+        .map((e) => AppNotification.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> markNotificationRead(String id) async {
+    await _patch('/notifications/$id/read');
+  }
+
+  Future<void> markAllNotificationsRead() async {
+    await _post('/notifications/read-all');
   }
 
   Future<dynamic> _delete(String path) async {

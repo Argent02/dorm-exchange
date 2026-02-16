@@ -17,17 +17,19 @@ class MyListingsScreen extends StatefulWidget {
   State<MyListingsScreen> createState() => _MyListingsScreenState();
 }
 
-class _MyListingsScreenState extends State<MyListingsScreen> {
+class _MyListingsScreenState extends State<MyListingsScreen> with SingleTickerProviderStateMixin {
   final ApiService _api = ApiService();
   List<Listing> _listings = [];
   bool _isLoading = true;
   String? _error;
   ListingsRefreshProvider? _refreshProvider;
   bool _listenerAdded = false;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) => _fetch());
   }
 
@@ -43,9 +45,15 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
 
   @override
   void dispose() {
+    _tabController.dispose();
     _refreshProvider?.removeListener(_onRefreshRequested);
     super.dispose();
   }
+
+  List<Listing> get _activeListings =>
+      _listings.where((l) => l.status == 'active').toList();
+  List<Listing> get _soldListings =>
+      _listings.where((l) => l.status == 'sold' || l.status == 'taken').toList();
 
   void _onRefreshRequested() => _fetch();
 
@@ -80,12 +88,15 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
     }
   }
 
-  Future<void> _markStatus(Listing listing, String status) async {
+  Future<void> _markStatus(Listing listing, String status, {String? successMessage}) async {
     try {
       await _api.updateListingStatus(listing.id, status);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Marked as $status'), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text(successMessage ?? 'Marked as $status'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
         _fetch();
       }
@@ -128,6 +139,18 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
       appBar: AppBar(
         title: const Text('Me'),
         backgroundColor: const Color(0xFF0F172A).withOpacity(0.85),
+        bottom: (_isLoading && _listings.isEmpty) || (_error != null && _listings.isEmpty)
+            ? null
+            : TabBar(
+                controller: _tabController,
+                indicatorColor: const Color(0xFF38BDF8),
+                labelColor: Colors.white,
+                unselectedLabelColor: Colors.white70,
+                tabs: [
+                  Tab(text: 'Active (${_activeListings.length})'),
+                  Tab(text: 'Sold (${_soldListings.length})'),
+                ],
+              ),
         actions: [
           Consumer<GridColumnsProvider>(
             builder: (context, grid, _) => IconButton(
@@ -144,13 +167,37 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
       body: RefreshIndicator(
         onRefresh: _fetch,
         color: const Color(0xFF38BDF8),
-        child: _buildScrollableBody(),
+        child: _isLoading && _listings.isEmpty
+            ? const Center(child: CircularProgressIndicator(color: Color(0xFF38BDF8)))
+            : _error != null && _listings.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.error_outline, size: 64, color: Colors.white.withOpacity(0.5)),
+                          const SizedBox(height: 16),
+                          Text(_error!, textAlign: TextAlign.center, style: TextStyle(color: Colors.white.withOpacity(0.8))),
+                          const SizedBox(height: 16),
+                          ElevatedButton(onPressed: _fetch, child: const Text('Retry')),
+                        ],
+                      ),
+                    ),
+                  )
+                : TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildTabBody(_activeListings),
+                      _buildTabBody(_soldListings),
+                    ],
+                  ),
       ),
     );
   }
 
-  Widget _buildScrollableBody() {
-    if (_listings.isNotEmpty) {
+  Widget _buildTabBody(List<Listing> listings) {
+    if (listings.isNotEmpty) {
       return Consumer<GridColumnsProvider>(
         builder: (context, grid, _) {
           final cols = grid.columns;
@@ -162,9 +209,9 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
               crossAxisSpacing: 12,
               childAspectRatio: cols == 1 ? 2.8 : (cols == 2 ? 0.78 : 0.72),
             ),
-            itemCount: _listings.length,
+            itemCount: listings.length,
             itemBuilder: (context, i) {
-              final listing = _listings[i];
+              final listing = listings[i];
               return _MyListingGridTile(
                 listing: listing,
                 columns: cols,
@@ -175,6 +222,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
                 ).then((_) => _fetch()),
                 onMarkSold: () => _markStatus(listing, 'sold'),
                 onMarkTaken: () => _markStatus(listing, 'taken'),
+                onRelist: () => _markStatus(listing, 'active', successMessage: 'Relisted'),
                 onDelete: () => _deleteListing(listing),
               );
             },
@@ -182,39 +230,20 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
         },
       );
     }
-
+    final isActiveTab = identical(listings, _activeListings);
+    final showFirstTimeEmpty = _listings.isEmpty && isActiveTab;
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       children: [
         SizedBox(
-          height: MediaQuery.of(context).size.height - kToolbarHeight - MediaQuery.of(context).padding.top - 120,
-          child: _buildBody(),
+          height: MediaQuery.of(context).size.height - kToolbarHeight - kBottomNavigationBarHeight - 120,
+          child: showFirstTimeEmpty ? _buildFirstTimeEmptyState() : _buildEmptyTabState(isActiveTab),
         ),
       ],
     );
   }
 
-  Widget _buildBody() {
-    if (_isLoading && _listings.isEmpty) {
-      return const Center(child: CircularProgressIndicator(color: Color(0xFF38BDF8)));
-    }
-    if (_error != null && _listings.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.error_outline, size: 64, color: Colors.white.withOpacity(0.5)),
-              const SizedBox(height: 16),
-              Text(_error!, textAlign: TextAlign.center, style: TextStyle(color: Colors.white.withOpacity(0.8))),
-              const SizedBox(height: 16),
-              ElevatedButton(onPressed: _fetch, child: const Text('Retry')),
-            ],
-          ),
-        ),
-      );
-    }
+  Widget _buildFirstTimeEmptyState() {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -247,9 +276,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
                 color: Colors.transparent,
                 child: InkWell(
                   onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const CreateListingScreen(),
-                    ),
+                    MaterialPageRoute(builder: (_) => const CreateListingScreen()),
                   ).then((_) => _fetch()),
                   borderRadius: BorderRadius.circular(16),
                   child: Row(
@@ -276,6 +303,41 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
       ),
     );
   }
+
+  Widget _buildEmptyTabState(bool isActiveTab) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isActiveTab ? Icons.inventory_2_outlined : Icons.check_circle_outline,
+              size: 64,
+              color: Colors.white.withValues(alpha: 0.4),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              isActiveTab ? 'No active listings' : 'No sold or taken listings',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Colors.white.withValues(alpha: 0.9),
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              isActiveTab
+                  ? 'Your active listings will appear here.'
+                  : 'Items you mark as sold or taken will appear here.',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
 }
 
 class _MyListingGridTile extends StatelessWidget {
@@ -284,6 +346,7 @@ class _MyListingGridTile extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onMarkSold;
   final VoidCallback onMarkTaken;
+  final VoidCallback? onRelist;
   final VoidCallback onDelete;
 
   const _MyListingGridTile({
@@ -292,6 +355,7 @@ class _MyListingGridTile extends StatelessWidget {
     required this.onTap,
     required this.onMarkSold,
     required this.onMarkTaken,
+    this.onRelist,
     required this.onDelete,
   });
 
@@ -338,11 +402,14 @@ class _MyListingGridTile extends StatelessWidget {
                       onSelected: (v) {
                         if (v == 'sold') onMarkSold();
                         if (v == 'taken') onMarkTaken();
+                        if (v == 'relist') onRelist?.call();
                         if (v == 'delete') onDelete();
                       },
                       itemBuilder: (_) => [
                         if (isActive) const PopupMenuItem(value: 'sold', child: Text('Mark as sold')),
                         if (isActive) const PopupMenuItem(value: 'taken', child: Text('Mark as taken')),
+                        if ((listing.status == 'sold' || listing.status == 'taken') && onRelist != null)
+                          const PopupMenuItem(value: 'relist', child: Text('Relist item')),
                         const PopupMenuItem(value: 'delete', child: Text('Remove listing')),
                       ],
                     ),

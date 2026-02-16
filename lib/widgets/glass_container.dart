@@ -14,7 +14,7 @@ class GlassContainer extends StatelessWidget {
     this.padding,
     this.margin,
     this.borderRadius = 16,
-    this.blur = 10,
+    this.blur = 12,
   });
 
   @override
@@ -23,7 +23,7 @@ class GlassContainer extends StatelessWidget {
       margin: margin,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(color: const Color(0x28FFFFFF), width: 1),
+        border: Border.all(color: const Color(0x18FFFFFF), width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.2),
@@ -40,7 +40,7 @@ class GlassContainer extends StatelessWidget {
             padding: padding,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(borderRadius),
-              color: Colors.white.withOpacity(0.08),
+              color: Colors.white.withOpacity(0.05),
             ),
             child: child,
           ),

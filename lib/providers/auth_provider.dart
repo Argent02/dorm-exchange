@@ -85,9 +85,17 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// Updates the user's profile and refreshes local state.
-  Future<void> updateProfile({String? name}) async {
+  Future<void> updateProfile({
+    String? name,
+    String? avatarUrl,
+    String? phone,
+  }) async {
     if (_currentUser == null) return;
-    _currentUser = await _api.updateMe(name: name);
+    _currentUser = await _api.updateMe(
+      name: name,
+      avatarUrl: avatarUrl,
+      phone: phone,
+    );
     notifyListeners();
   }
 

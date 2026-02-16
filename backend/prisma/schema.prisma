@@ -35,6 +35,8 @@ model User {
   firebaseUid String   @unique @map("firebase_uid")
   email       String   @unique @db.VarChar(255)
   name        String?  @db.VarChar(100)
+  avatarUrl   String?  @map("avatar_url") @db.Text
+  phone       String?  @db.VarChar(20)
   role        Role     @default(student)
   isVerified  Boolean  @default(false) @map("is_verified")
   reportCount Int      @default(0) @map("report_count")
@@ -49,8 +51,28 @@ model User {
   sellExchanges         Exchange[]     @relation("ExchangeSeller")
   buyExchanges          Exchange[]     @relation("ExchangeBuyer")
   locationReviews       LocationReview[]
+  notifications         Notification[]
 
   @@map("users")
+}
+
+// ─── Notifications ──────────────────────────────────────
+
+model Notification {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  type      String   @db.VarChar(50)
+  title     String   @db.VarChar(255)
+  body      String?  @db.Text
+  data      String?  @db.Text
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isRead])
+  @@map("notifications")
 }
 
 // ─── Listings ────────────────────────────────────────────

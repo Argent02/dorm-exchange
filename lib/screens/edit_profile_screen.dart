@@ -14,6 +14,7 @@ class EditProfileScreen extends StatefulWidget {
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _nameController;
+  late TextEditingController _phoneController;
   bool _isSaving = false;
   String? _error;
 
@@ -22,11 +23,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.initState();
     final user = context.read<AuthProvider>().currentUser;
     _nameController = TextEditingController(text: user?.name ?? '');
+    _phoneController = TextEditingController(text: user?.phone ?? '');
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
@@ -43,7 +46,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     });
 
     try {
-      await context.read<AuthProvider>().updateProfile(name: name);
+      await context.read<AuthProvider>().updateProfile(
+            name: name,
+            phone: _phoneController.text.trim(),
+          );
       if (mounted) Navigator.of(context).pop();
     } on ApiException catch (e) {
       if (mounted) setState(() {
@@ -117,6 +123,39 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       style: const TextStyle(color: Colors.redAccent, fontSize: 13),
                     ),
                   ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            GlassContainer(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Phone number',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white.withValues(alpha: 0.7),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _phoneController,
+                    keyboardType: TextInputType.phone,
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                    decoration: InputDecoration(
+                      hintText: 'Your phone number',
+                      hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+                      ),
+                      filled: true,
+                      fillColor: Colors.white.withValues(alpha: 0.05),
+                    ),
+                  ),
                 ],
               ),
             ),

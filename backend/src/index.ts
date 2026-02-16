@@ -7,6 +7,7 @@ import conversationsRoutes from "./routes/conversations.js";
 import exchangesRoutes from "./routes/exchanges.js";
 import listingsRoutes from "./routes/listings.js";
 import savedRoutes from "./routes/saved.js";
+import notificationsRoutes from "./routes/notifications.js";
 import usersRoutes from "./routes/users.js";
 
 // ─── Validate Required Env Vars ──────────────────────────
@@ -36,6 +37,7 @@ app.use("/conversations", conversationsRoutes);
 app.use("/exchanges", exchangesRoutes);
 app.use("/listings", listingsRoutes);
 app.use("/saved", savedRoutes);
+app.use("/notifications", notificationsRoutes);
 app.use("/users", usersRoutes);
 
 // ─── Health Check ────────────────────────────────────────

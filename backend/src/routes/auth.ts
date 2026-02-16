@@ -65,9 +65,15 @@ router.get("/me", requireAuth, requireUser, async (req, res) => {
 router.patch("/me", requireAuth, requireUser, async (req, res) => {
   try {
     const body = req.body as Record<string, unknown>;
-    const updates: { name?: string } = {};
+    const updates: { name?: string; avatarUrl?: string | null; phone?: string | null } = {};
     if (typeof body.name === "string" && body.name.trim().length > 0) {
       updates.name = body.name.trim().slice(0, 100);
+    }
+    if (body.avatarUrl !== undefined) {
+      updates.avatarUrl = typeof body.avatarUrl === "string" ? body.avatarUrl : null;
+    }
+    if (body.phone !== undefined) {
+      updates.phone = typeof body.phone === "string" ? body.phone.trim().slice(0, 20) || null : null;
     }
 
     const user = await prisma.user.update({

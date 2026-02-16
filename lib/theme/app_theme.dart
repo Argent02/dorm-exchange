@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 const Color _darkBlue = Color(0xFF0F172A);
-const Color _glassWhite = Color(0x18FFFFFF);
-const Color _glassBorder = Color(0x28FFFFFF);
+const Color _glassWhite = Color(0x0DFFFFFF);
+const Color _glassBorder = Color(0x18FFFFFF);
 const Color _accent = Color(0xFF38BDF8);
 
 final ThemeData appTheme = ThemeData(

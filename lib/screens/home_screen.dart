@@ -7,7 +7,6 @@ import '../providers/grid_columns_provider.dart';
 import '../providers/listings_refresh_provider.dart';
 import '../services/api_service.dart';
 import '../widgets/glass_container.dart';
-import 'create_listing_screen.dart';
 import 'listing_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -174,20 +173,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                       ),
                     const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _ActionCard(
-                            icon: Icons.add_circle_outline,
-                            label: 'Post listing',
-                            onTap: () => Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => const CreateListingScreen()),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
                     Text(
                       'Browse listings',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -349,38 +334,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         );
       },
-    );
-  }
-}
-
-class _ActionCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  const _ActionCard({required this.icon, required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GlassContainer(
-      padding: const EdgeInsets.all(16),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Row(
-          children: [
-            Icon(icon, size: 28, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(width: 12),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

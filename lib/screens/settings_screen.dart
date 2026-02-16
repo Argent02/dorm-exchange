@@ -1,37 +1,20 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../models/exchange.dart';
 import '../models/listing.dart';
+import '../models/notification.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
+import '../services/image_upload_service.dart';
 import '../widgets/glass_container.dart';
 import 'edit_profile_screen.dart';
 import 'listing_detail_screen.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
-
-  @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
-}
-
-class _SettingsScreenState extends State<SettingsScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  final ApiService _api = ApiService();
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,85 +22,174 @@ class _SettingsScreenState extends State<SettingsScreen>
       appBar: AppBar(
         title: const Text('Settings'),
         backgroundColor: const Color(0xFF0F172A).withValues(alpha: 0.85),
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Profile'),
-            Tab(text: 'Exchanges'),
-            Tab(text: 'Saved'),
-          ],
-        ),
       ),
-      body: TabBarView(
-        controller: _tabController,
+      body: ListView(
+        padding: const EdgeInsets.all(20),
         children: [
-          _ProfileSection(),
-          _ExchangesSection(),
-          _SavedSection(),
+          _SettingsListTile(
+            icon: Icons.person_outline,
+            title: 'Profile',
+            subtitle: 'Photo, name, phone number',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ProfileSettingsScreen()),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _SettingsListTile(
+            icon: Icons.swap_horiz,
+            title: 'Exchanges',
+            subtitle: 'Bought and sold history',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ExchangesScreen()),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _SettingsListTile(
+            icon: Icons.bookmark_outline,
+            title: 'Saved',
+            subtitle: 'Your saved listings',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SavedScreen()),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _SettingsListTile(
+            icon: Icons.notifications_outlined,
+            title: 'Notifications',
+            subtitle: 'Notification center',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const NotificationCenterScreen()),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-class _ProfileSection extends StatelessWidget {
+class _SettingsListTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _SettingsListTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassContainer(
+      padding: const EdgeInsets.all(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Row(
+          children: [
+            Icon(icon, size: 28, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.white.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right, color: Colors.white.withValues(alpha: 0.5)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Profile Settings Screen ─────────────────────────────────
+
+class ProfileSettingsScreen extends StatelessWidget {
+  const ProfileSettingsScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final user = auth.currentUser;
 
     if (user == null) {
-      return const Center(child: CircularProgressIndicator(color: Color(0xFF38BDF8)));
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator(color: Color(0xFF38BDF8))),
+      );
     }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Profile'),
+        backgroundColor: const Color(0xFF0F172A).withValues(alpha: 0.85),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
         children: [
-          CircleAvatar(
-            radius: 48,
-            backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
-            child: Text(
-              (user.name ?? user.email).substring(0, 1).toUpperCase(),
-              style: TextStyle(
-                fontSize: 36,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
-              ),
+          Center(
+            child: Stack(
+              children: [
+                _ProfileAvatar(user: user),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: _EditProfilePhotoButton(user: user),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 16),
-          Text(
-            user.name ?? user.email,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-            textAlign: TextAlign.center,
+          Center(
+            child: Text(
+              user.name ?? user.email,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+            ),
           ),
-          Text(
-            user.email,
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 14),
+          Center(
+            child: Text(
+              user.email,
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 14),
+            ),
           ),
-          if (user.isVerified)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
+          if (user.phone != null && user.phone!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Center(
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.verified, size: 18, color: Theme.of(context).colorScheme.primary),
-                  const SizedBox(width: 4),
+                  Icon(Icons.phone_outlined, size: 16, color: Colors.white.withValues(alpha: 0.7)),
+                  const SizedBox(width: 6),
                   Text(
-                    'Verified',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Theme.of(context).colorScheme.primary,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    user.phone!,
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
                   ),
                 ],
               ),
             ),
+          ],
           const SizedBox(height: 24),
           GlassContainer(
             padding: EdgeInsets.zero,
@@ -128,7 +200,12 @@ class _ProfileSection extends StatelessWidget {
                   title: const Text('Email', style: TextStyle(color: Colors.white)),
                   subtitle: Text(user.email, style: TextStyle(color: Colors.white.withValues(alpha: 0.6))),
                 ),
-                Divider(height: 1, color: Colors.white.withValues(alpha: 0.1)),
+                if (user.phone != null && user.phone!.isNotEmpty)
+                  ListTile(
+                    leading: Icon(Icons.phone_outlined, color: Colors.white.withValues(alpha: 0.8)),
+                    title: const Text('Phone', style: TextStyle(color: Colors.white)),
+                    subtitle: Text(user.phone!, style: TextStyle(color: Colors.white.withValues(alpha: 0.6))),
+                  ),
                 ListTile(
                   leading: Icon(Icons.calendar_today_outlined, color: Colors.white.withValues(alpha: 0.8)),
                   title: const Text('Member since', style: TextStyle(color: Colors.white)),
@@ -141,21 +218,27 @@ class _ProfileSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => Navigator.of(context).push(
+          GlassContainer(
+            padding: EdgeInsets.zero,
+            child: ListTile(
+              leading: Icon(Icons.edit_outlined, color: Theme.of(context).colorScheme.primary),
+              title: const Text('Edit profile', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500)),
+              trailing: Icon(Icons.chevron_right, color: Colors.white.withValues(alpha: 0.5)),
+              onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const EditProfileScreen()),
               ),
-              icon: const Icon(Icons.edit_outlined),
-              label: const Text('Edit profile'),
             ),
           ),
           const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () async {
+          GlassContainer(
+            padding: EdgeInsets.zero,
+            child: ListTile(
+              leading: Icon(Icons.logout, color: Colors.red, size: 22),
+              title: Text(
+                'Sign out',
+                style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500),
+              ),
+              onTap: () async {
                 final ok = await showDialog<bool>(
                   context: context,
                   builder: (_) => AlertDialog(
@@ -173,15 +256,8 @@ class _ProfileSection extends StatelessWidget {
                     ],
                   ),
                 );
-                if (ok == true) auth.signOut();
+                if (ok == true && context.mounted) auth.signOut();
               },
-              icon: const Icon(Icons.logout),
-              label: const Text('Sign out'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.red,
-                side: const BorderSide(color: Colors.red),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
             ),
           ),
         ],
@@ -195,12 +271,101 @@ class _ProfileSection extends StatelessWidget {
   }
 }
 
-class _ExchangesSection extends StatefulWidget {
+class _ProfileAvatar extends StatelessWidget {
+  final dynamic user;
+
+  const _ProfileAvatar({required this.user});
+
   @override
-  State<_ExchangesSection> createState() => _ExchangesSectionState();
+  Widget build(BuildContext context) {
+    final avatarUrl = user.avatarUrl as String?;
+    return CircleAvatar(
+      radius: 56,
+      backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+      backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty
+          ? NetworkImage(avatarUrl)
+          : null,
+      child: avatarUrl == null || avatarUrl.isEmpty
+          ? Text(
+              (user.name ?? user.email).toString().substring(0, 1).toUpperCase(),
+              style: TextStyle(
+                fontSize: 40,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            )
+          : null,
+    );
+  }
 }
 
-class _ExchangesSectionState extends State<_ExchangesSection> {
+class _EditProfilePhotoButton extends StatefulWidget {
+  final dynamic user;
+
+  const _EditProfilePhotoButton({required this.user});
+
+  @override
+  State<_EditProfilePhotoButton> createState() => _EditProfilePhotoButtonState();
+}
+
+class _EditProfilePhotoButtonState extends State<_EditProfilePhotoButton> {
+  bool _isUploading = false;
+
+  Future<void> _pickAndUpload() async {
+    if (_isUploading) return;
+    final picker = ImagePicker();
+    final xfile = await picker.pickImage(source: ImageSource.gallery, maxWidth: 512, imageQuality: 85);
+    if (xfile == null || !mounted) return;
+
+    setState(() => _isUploading = true);
+    try {
+      final file = File(xfile.path);
+      final url = await ImageUploadService().uploadProfileImage(file);
+      await context.read<AuthProvider>().updateProfile(avatarUrl: url);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to upload photo'), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Theme.of(context).colorScheme.primary,
+      shape: const CircleBorder(),
+      child: InkWell(
+        onTap: _isUploading ? null : _pickAndUpload,
+        customBorder: const CircleBorder(),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          child: _isUploading
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                )
+              : const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Exchanges Screen ───────────────────────────────────────
+
+class ExchangesScreen extends StatefulWidget {
+  const ExchangesScreen({super.key});
+
+  @override
+  State<ExchangesScreen> createState() => _ExchangesScreenState();
+}
+
+class _ExchangesScreenState extends State<ExchangesScreen> {
   final ApiService _api = ApiService();
   List<Exchange> _bought = [];
   List<Exchange> _sold = [];
@@ -228,24 +393,30 @@ class _ExchangesSectionState extends State<_ExchangesSection> {
         });
       }
     } on ApiException catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = e.message;
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() {
+        _error = e.message;
+        _isLoading = false;
+      });
     } catch (_) {
-      if (mounted) {
-        setState(() {
-          _error = 'Could not load exchanges';
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() {
+        _error = 'Could not load exchanges';
+        _isLoading = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Exchanges'),
+        backgroundColor: const Color(0xFF0F172A).withValues(alpha: 0.85),
+      ),
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator(color: Color(0xFF38BDF8)));
     }
@@ -339,26 +510,12 @@ class _ExchangeTile extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       child: InkWell(
         onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => ListingDetailScreen(listingId: listing.id),
-          ),
+          MaterialPageRoute(builder: (_) => ListingDetailScreen(listingId: listing.id)),
         ),
         borderRadius: BorderRadius.circular(16),
         child: Row(
           children: [
-            if (listing.imageUrl != null && listing.imageUrl!.isNotEmpty)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  listing.imageUrl!,
-                  width: 56,
-                  height: 56,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _placeholder(),
-                ),
-              )
-            else
-              _placeholder(),
+            _buildThumbnail(listing),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -366,21 +523,14 @@ class _ExchangeTile extends StatelessWidget {
                 children: [
                   Text(
                     listing.title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
-                      color: Colors.white,
-                    ),
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: Colors.white),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '${exchange.status} • ${_formatDate(exchange.createdAt)}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.white.withValues(alpha: 0.6),
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.6)),
                   ),
                 ],
               ),
@@ -390,6 +540,22 @@ class _ExchangeTile extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildThumbnail(listing) {
+    if (listing.imageUrl != null && listing.imageUrl!.isNotEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.network(
+          listing.imageUrl!,
+          width: 56,
+          height: 56,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _placeholder(),
+        ),
+      );
+    }
+    return _placeholder();
   }
 
   Widget _placeholder() {
@@ -410,12 +576,16 @@ class _ExchangeTile extends StatelessWidget {
   }
 }
 
-class _SavedSection extends StatefulWidget {
+// ─── Saved Screen ───────────────────────────────────────────
+
+class SavedScreen extends StatefulWidget {
+  const SavedScreen({super.key});
+
   @override
-  State<_SavedSection> createState() => _SavedSectionState();
+  State<SavedScreen> createState() => _SavedScreenState();
 }
 
-class _SavedSectionState extends State<_SavedSection> {
+class _SavedScreenState extends State<SavedScreen> {
   final ApiService _api = ApiService();
   List<Listing> _listings = [];
   bool _isLoading = true;
@@ -434,31 +604,35 @@ class _SavedSectionState extends State<_SavedSection> {
     });
     try {
       final list = await _api.getSavedListings();
-      if (mounted) {
-        setState(() {
-          _listings = list;
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() {
+        _listings = list;
+        _isLoading = false;
+      });
     } on ApiException catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = e.message;
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() {
+        _error = e.message;
+        _isLoading = false;
+      });
     } catch (_) {
-      if (mounted) {
-        setState(() {
-          _error = 'Could not load saved listings';
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() {
+        _error = 'Could not load saved listings';
+        _isLoading = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Saved'),
+        backgroundColor: const Color(0xFF0F172A).withValues(alpha: 0.85),
+      ),
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator(color: Color(0xFF38BDF8)));
     }
@@ -510,94 +684,63 @@ class _SavedSectionState extends State<_SavedSection> {
         itemCount: _listings.length,
         itemBuilder: (context, i) {
           final listing = _listings[i];
-          return _SavedListingTile(
-            listing: listing,
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => ListingDetailScreen(listingId: listing.id),
-              ),
-            ).then((_) => _fetch()),
-            onUnsave: () async {
-              try {
-                await _api.unsaveListing(listing.id);
-                if (mounted) _fetch();
-              } catch (_) {}
-            },
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _SavedListingTile extends StatelessWidget {
-  final Listing listing;
-  final VoidCallback onTap;
-  final VoidCallback onUnsave;
-
-  const _SavedListingTile({
-    required this.listing,
-    required this.onTap,
-    required this.onUnsave,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GlassContainer(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Row(
-          children: [
-            if (listing.imageUrl != null && listing.imageUrl!.isNotEmpty)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  listing.imageUrl!,
-                  width: 56,
-                  height: 56,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _placeholder(),
-                ),
-              )
-            else
-              _placeholder(),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          return GlassContainer(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(12),
+            child: InkWell(
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => ListingDetailScreen(listingId: listing.id)),
+              ).then((_) => _fetch()),
+              borderRadius: BorderRadius.circular(16),
+              child: Row(
                 children: [
-                  Text(
-                    listing.title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
-                      color: Colors.white,
+                  if (listing.imageUrl != null && listing.imageUrl!.isNotEmpty)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        listing.imageUrl!,
+                        width: 56,
+                        height: 56,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _placeholder(),
+                      ),
+                    )
+                  else
+                    _placeholder(),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          listing.title,
+                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: Colors.white),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          listing.isFree ? 'FREE' : '\$${listing.price?.toStringAsFixed(0) ?? '0'}',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
+                        ),
+                      ],
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    listing.isFree ? 'FREE' : '\$${listing.price?.toStringAsFixed(0) ?? '0'}',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
+                  IconButton(
+                    icon: Icon(Icons.bookmark, color: Theme.of(context).colorScheme.primary),
+                    onPressed: () async {
+                      try {
+                        await _api.unsaveListing(listing.id);
+                        if (mounted) _fetch();
+                      } catch (_) {}
+                    },
+                    tooltip: 'Remove from saved',
                   ),
                 ],
               ),
             ),
-            IconButton(
-              icon: Icon(Icons.bookmark, color: Theme.of(context).colorScheme.primary),
-              onPressed: onUnsave,
-              tooltip: 'Remove from saved',
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -612,5 +755,199 @@ class _SavedListingTile extends StatelessWidget {
       ),
       child: Icon(Icons.image_not_supported, color: Colors.white.withValues(alpha: 0.3)),
     );
+  }
+}
+
+// ─── Notification Center Screen ─────────────────────────────
+
+class NotificationCenterScreen extends StatefulWidget {
+  const NotificationCenterScreen({super.key});
+
+  @override
+  State<NotificationCenterScreen> createState() => _NotificationCenterScreenState();
+}
+
+class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
+  final ApiService _api = ApiService();
+  List<AppNotification> _notifications = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetch();
+  }
+
+  Future<void> _fetch() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final list = await _api.getNotifications();
+      if (mounted) setState(() {
+        _notifications = list;
+        _isLoading = false;
+      });
+    } on ApiException catch (e) {
+      if (mounted) setState(() {
+        _error = e.message;
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() {
+        _error = 'Could not load notifications';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _markAllRead() async {
+    try {
+      await _api.markAllNotificationsRead();
+      if (mounted) _fetch();
+    } catch (_) {}
+  }
+
+  Future<void> _markRead(AppNotification n) async {
+    if (n.isRead) return;
+    try {
+      await _api.markNotificationRead(n.id);
+      if (mounted) _fetch();
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final unreadCount = _notifications.where((n) => !n.isRead).length;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Notifications'),
+        backgroundColor: const Color(0xFF0F172A).withValues(alpha: 0.85),
+        actions: [
+          if (unreadCount > 0)
+            TextButton(
+              onPressed: _markAllRead,
+              child: const Text('Mark all read'),
+            ),
+        ],
+      ),
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator(color: Color(0xFF38BDF8)));
+    }
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(_error!, textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              ElevatedButton(onPressed: _fetch, child: const Text('Retry')),
+            ],
+          ),
+        ),
+      );
+    }
+    if (_notifications.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.notifications_none, size: 64, color: Colors.white.withValues(alpha: 0.4)),
+              const SizedBox(height: 16),
+              Text(
+                'No notifications',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white.withValues(alpha: 0.9)),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Your notifications will appear here.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _fetch,
+      color: const Color(0xFF38BDF8),
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _notifications.length,
+        itemBuilder: (context, i) {
+          final n = _notifications[i];
+          return GlassContainer(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(16),
+            child: InkWell(
+              onTap: () => _markRead(n),
+              borderRadius: BorderRadius.circular(16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    n.isRead ? Icons.notifications_outlined : Icons.notifications,
+                    size: 24,
+                    color: n.isRead ? Colors.white.withValues(alpha: 0.5) : Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          n.title,
+                          style: TextStyle(
+                            fontWeight: n.isRead ? FontWeight.normal : FontWeight.w600,
+                            fontSize: 15,
+                            color: Colors.white,
+                          ),
+                        ),
+                        if (n.body != null && n.body!.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            n.body!,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.white.withValues(alpha: 0.7),
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                        const SizedBox(height: 4),
+                        Text(
+                          _formatDate(n.createdAt),
+                          style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.5)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  String _formatDate(DateTime d) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${months[d.month - 1]} ${d.day}, ${d.year}';
   }
 }
