@@ -4,7 +4,9 @@ import cors from "cors";
 
 import authRoutes from "./routes/auth.js";
 import conversationsRoutes from "./routes/conversations.js";
+import exchangesRoutes from "./routes/exchanges.js";
 import listingsRoutes from "./routes/listings.js";
+import savedRoutes from "./routes/saved.js";
 import usersRoutes from "./routes/users.js";
 
 // ─── Validate Required Env Vars ──────────────────────────
@@ -31,7 +33,9 @@ app.use(express.json());
 
 app.use("/auth", authRoutes);
 app.use("/conversations", conversationsRoutes);
+app.use("/exchanges", exchangesRoutes);
 app.use("/listings", listingsRoutes);
+app.use("/saved", savedRoutes);
 app.use("/users", usersRoutes);
 
 // ─── Health Check ────────────────────────────────────────

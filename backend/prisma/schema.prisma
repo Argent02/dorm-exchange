@@ -42,6 +42,7 @@ model User {
 
   // Relations
   listings              Listing[]
+  savedListings         SavedListing[]
   initiatedConversations Conversation[] @relation("ConversationInitiator")
   ownedConversations    Conversation[] @relation("ConversationOwner")
   sentMessages          Message[]
@@ -69,6 +70,7 @@ model Listing {
 
   // Relations
   creator       User           @relation(fields: [createdBy], references: [id])
+  savedBy       SavedListing[]
   conversations Conversation[]
   exchanges     Exchange[]
 
@@ -147,6 +149,22 @@ model Exchange {
   @@index([buyerId])
   @@index([status])
   @@map("exchanges")
+}
+
+// ─── Saved Listings ──────────────────────────────────────
+
+model SavedListing {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  listingId String   @map("listing_id") @db.Uuid
+  savedAt   DateTime @default(now()) @map("saved_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId])
+  @@index([userId])
+  @@map("saved_listings")
 }
 
 // ─── Locations ───────────────────────────────────────────

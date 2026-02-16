@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/conversation.dart';
+import '../models/exchange.dart';
 import '../models/listing.dart';
 import '../models/user.dart';
 
@@ -238,6 +239,43 @@ class ApiService {
   Future<ConversationMessage> sendMessage(String conversationId, String content) async {
     final data = await _post('/conversations/$conversationId/messages', body: {'content': content});
     return ConversationMessage.fromJson(data['message'] as Map<String, dynamic>);
+  }
+
+  // ─── Exchange Endpoints ──────────────────────────────────
+
+  Future<({List<Exchange> bought, List<Exchange> sold})> getMyExchanges() async {
+    final data = await _get('/exchanges');
+    final bought = (data['bought'] as List<dynamic>)
+        .map((e) => Exchange.fromJson(e as Map<String, dynamic>))
+        .toList();
+    final sold = (data['sold'] as List<dynamic>)
+        .map((e) => Exchange.fromJson(e as Map<String, dynamic>))
+        .toList();
+    return (bought: bought, sold: sold);
+  }
+
+  // ─── Saved Endpoints ─────────────────────────────────────
+
+  Future<List<Listing>> getSavedListings() async {
+    final data = await _get('/saved');
+    return (data['listings'] as List<dynamic>)
+        .map((e) => Listing.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> saveListing(String listingId) async {
+    await _post('/saved/$listingId');
+  }
+
+  Future<void> unsaveListing(String listingId) async {
+    await _delete('/saved/$listingId');
+  }
+
+  Future<dynamic> _delete(String path) async {
+    final uri = Uri.parse('$_baseUrl$path');
+    final headers = await _authHeaders();
+    final response = await http.delete(uri, headers: headers);
+    return _handleResponse(response);
   }
 
   // ─── User Endpoints ──────────────────────────────────────

@@ -20,6 +20,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
   Listing? _listing;
   bool _isLoading = true;
   String? _error;
+  bool _saveInProgress = false;
 
   @override
   void initState() {
@@ -54,6 +55,50 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
     }
   }
 
+  Future<void> _toggleSaved() async {
+    if (_listing == null || _saveInProgress) return;
+    setState(() => _saveInProgress = true);
+    try {
+      if (_listing!.isSaved) {
+        await _api.unsaveListing(_listing!.id);
+        if (mounted) setState(() {
+          _listing = _listing!.copyWith(isSaved: false);
+          _saveInProgress = false;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Removed from saved'), behavior: SnackBarBehavior.floating),
+          );
+        }
+      } else {
+        await _api.saveListing(_listing!.id);
+        if (mounted) setState(() {
+          _listing = _listing!.copyWith(isSaved: true);
+          _saveInProgress = false;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Saved to your list'), behavior: SnackBarBehavior.floating),
+          );
+        }
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        setState(() => _saveInProgress = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _saveInProgress = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not update saved status'), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating),
+        );
+      }
+    }
+  }
+
   Future<void> _fetch() async {
     try {
       final listing = await _api.getListing(widget.listingId);
@@ -83,6 +128,17 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
+        actions: [
+          if (_listing != null)
+            IconButton(
+              icon: Icon(
+                _listing!.isSaved ? Icons.bookmark : Icons.bookmark_border,
+                color: _listing!.isSaved ? Theme.of(context).colorScheme.primary : null,
+              ),
+              onPressed: _saveInProgress ? null : _toggleSaved,
+              tooltip: _listing!.isSaved ? 'Remove from saved' : 'Save listing',
+            ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

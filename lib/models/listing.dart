@@ -34,6 +34,7 @@ class Listing {
   final DateTime createdAt;
   final DateTime updatedAt;
   final ListingCreator? creator;
+  final bool isSaved;
 
   Listing({
     required this.id,
@@ -48,6 +49,7 @@ class Listing {
     required this.createdAt,
     required this.updatedAt,
     this.creator,
+    this.isSaved = false,
   });
 
   factory Listing.fromJson(Map<String, dynamic> json) {
@@ -70,6 +72,25 @@ class Listing {
       creator: json['creator'] != null
           ? ListingCreator.fromJson(json['creator'] as Map<String, dynamic>)
           : null,
+      isSaved: json['isSaved'] as bool? ?? false,
+    );
+  }
+
+  Listing copyWith({bool? isSaved}) {
+    return Listing(
+      id: id,
+      title: title,
+      description: description,
+      imageUrl: imageUrl,
+      price: price,
+      isFree: isFree,
+      category: category,
+      status: status,
+      createdBy: createdBy,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      creator: creator,
+      isSaved: isSaved ?? this.isSaved,
     );
   }
 

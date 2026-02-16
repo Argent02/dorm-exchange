@@ -4,7 +4,7 @@ import 'screens/home_screen.dart';
 import 'screens/inbox_screen.dart';
 import 'screens/my_listings_screen.dart';
 import 'screens/create_listing_screen.dart';
-import 'screens/profile_screen.dart';
+import 'screens/settings_screen.dart';
 import 'widgets/glass_container.dart';
 
 class MainShell extends StatefulWidget {
@@ -26,7 +26,7 @@ class _MainShellState extends State<MainShell> {
       const HomeScreen(),
       const InboxScreen(),
       const MyListingsScreen(),
-      const ProfileScreen(),
+      const SettingsScreen(),
     ];
   }
 
@@ -38,7 +38,7 @@ class _MainShellState extends State<MainShell> {
         index: _index,
         children: _screens,
       ),
-      floatingActionButton: (_index == 1 || _index == 2) ? null : GlassContainer(
+      floatingActionButton: (_index == 1 || _index == 2 || _index == 3) ? null : GlassContainer(
         padding: EdgeInsets.zero,
         margin: const EdgeInsets.only(bottom: 24),
         borderRadius: 28,
@@ -99,7 +99,7 @@ class _GlassBottomNav extends StatelessWidget {
             _navItem(context, 1, Icons.chat_bubble_outline, Icons.chat_bubble, 'Messages'),
             const SizedBox(width: 48),
             _navItem(context, 2, Icons.inventory_2_outlined, Icons.inventory_2, 'Me'),
-            _navItem(context, 3, Icons.person_outline, Icons.person, 'Profile'),
+            _navItem(context, 3, Icons.settings_outlined, Icons.settings, 'Settings'),
           ],
         ),
       ),

@@ -80,7 +80,8 @@ router.get("/", async (req, res) => {
       ];
     }
 
-    const [listings, total] = await Promise.all([
+    const userId = req.user!.id;
+    const [listings, total, savedRows] = await Promise.all([
       prisma.listing.findMany({
         where,
         include: {
@@ -93,10 +94,20 @@ router.get("/", async (req, res) => {
         take: limitNum,
       }),
       prisma.listing.count({ where }),
+      prisma.savedListing.findMany({
+        where: { userId },
+        select: { listingId: true },
+      }),
     ]);
 
+    const savedIds = new Set(savedRows.map((s) => s.listingId));
+    const listingsWithSaved = listings.map((l) => ({
+      ...l,
+      isSaved: savedIds.has(l.id),
+    }));
+
     res.json({
-      listings,
+      listings: listingsWithSaved,
       pagination: {
         page: pageNum,
         limit: limitNum,
@@ -116,21 +127,29 @@ router.get("/", async (req, res) => {
  */
 router.get("/:id", async (req, res) => {
   try {
-    const listing = await prisma.listing.findUnique({
-      where: { id: req.params.id },
-      include: {
-        creator: {
-          select: { id: true, name: true, email: true, joinDate: true, firebaseUid: true },
+    const userId = req.user!.id;
+    const [listing, saved] = await Promise.all([
+      prisma.listing.findUnique({
+        where: { id: req.params.id },
+        include: {
+          creator: {
+            select: { id: true, name: true, email: true, joinDate: true, firebaseUid: true },
+          },
         },
-      },
-    });
+      }),
+      prisma.savedListing.findUnique({
+        where: {
+          userId_listingId: { userId, listingId: req.params.id },
+        },
+      }),
+    ]);
 
     if (!listing || listing.status === "deleted") {
       res.status(404).json({ error: "Listing not found" });
       return;
     }
 
-    res.json({ listing });
+    res.json({ listing: { ...listing, isSaved: !!saved } });
   } catch (error) {
     console.error("Get listing error:", error);
     res.status(500).json({ error: "Failed to fetch listing" });

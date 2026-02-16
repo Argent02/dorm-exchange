@@ -97,6 +97,31 @@ class _HomeScreenState extends State<HomeScreen> {
     _fetch();
   }
 
+  Future<void> _onSaveToggle(Listing listing) async {
+    try {
+      if (listing.isSaved) {
+        await _api.unsaveListing(listing.id);
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Removed from saved'), behavior: SnackBarBehavior.floating),
+        );
+      } else {
+        await _api.saveListing(listing.id);
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Saved to your list'), behavior: SnackBarBehavior.floating),
+        );
+      }
+      _fetch();
+    } on ApiException catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating),
+      );
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not update saved status'), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
@@ -316,6 +341,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       builder: (_) => ListingDetailScreen(listingId: listing.id),
                     ),
                   ),
+                  onSaveTap: () => _onSaveToggle(listing),
                 );
               },
               childCount: _listings.length,
@@ -401,8 +427,14 @@ class _ListingGridTile extends StatelessWidget {
   final Listing listing;
   final int columns;
   final VoidCallback onTap;
+  final VoidCallback onSaveTap;
 
-  const _ListingGridTile({required this.listing, required this.columns, required this.onTap});
+  const _ListingGridTile({
+    required this.listing,
+    required this.columns,
+    required this.onTap,
+    required this.onSaveTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -418,15 +450,41 @@ class _ListingGridTile extends StatelessWidget {
           children: [
             Expanded(
               flex: isWide ? 3 : 2,
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                child: listing.imageUrl != null && listing.imageUrl!.isNotEmpty
-                    ? Image.network(
-                        listing.imageUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _placeholder(),
-                      )
-                    : _placeholder(),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                    child: listing.imageUrl != null && listing.imageUrl!.isNotEmpty
+                        ? Image.network(
+                            listing.imageUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => _placeholder(),
+                          )
+                        : _placeholder(),
+                  ),
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          onSaveTap();
+                        },
+                        borderRadius: BorderRadius.circular(20),
+                        child: Padding(
+                          padding: const EdgeInsets.all(6),
+                          child: Icon(
+                            listing.isSaved ? Icons.bookmark : Icons.bookmark_border,
+                            size: 22,
+                            color: listing.isSaved ? const Color(0xFF38BDF8) : Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             Padding(
