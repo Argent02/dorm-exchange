@@ -25,7 +25,7 @@ class ApiService {
   //
   // Set your host machine's current IP here for physical device testing.
   // The dev.sh script updates this automatically on each run.
-  static const String _localIp = '10.0.0.204';
+  static const String _localIp = '10.203.1.67';
   static const String _prodUrl = 'http://localhost:3000'; // TODO: replace with production URL
 
   static String get _baseUrl {
