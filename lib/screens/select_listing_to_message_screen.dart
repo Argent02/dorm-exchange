@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../models/listing.dart';
 import '../providers/auth_provider.dart';
+import '../providers/conversations_refresh_provider.dart';
 import '../providers/grid_columns_provider.dart';
 import '../services/api_service.dart';
 import '../widgets/glass_container.dart';
@@ -85,6 +86,7 @@ class _SelectListingToMessageScreenState extends State<SelectListingToMessageScr
         ownerId: creatorId,
       );
       if (mounted) {
+        context.read<ConversationsRefreshProvider>().trigger();
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (_) => ChatScreen(conversationId: conv.id),

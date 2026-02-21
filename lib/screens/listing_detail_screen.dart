@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/listing.dart';
+import '../theme/app_theme.dart';
 import '../providers/auth_provider.dart';
+import '../providers/conversations_refresh_provider.dart';
 import '../services/api_service.dart';
 import 'chat_screen.dart';
 
@@ -32,7 +34,18 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
     final listing = _listing!;
     final creatorId = listing.creator?.id ?? listing.createdBy;
     final myId = context.read<AuthProvider>().currentUser?.id;
-    if (myId == null || creatorId == myId) return;
+    if (myId == null) return;
+    if (creatorId == myId) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('This is your listing — you can\'t message yourself.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
 
     try {
       final conv = await _api.createConversation(
@@ -40,6 +53,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
         ownerId: creatorId,
       );
       if (context.mounted) {
+        context.read<ConversationsRefreshProvider>().trigger();
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => ChatScreen(conversationId: conv.id),
@@ -172,16 +186,16 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                 _listing!.imageUrl!,
                                 fit: BoxFit.cover,
                                 errorBuilder: (_, __, ___) => Container(
-                                  color: Colors.grey[200],
-                                  child: Icon(Icons.image_not_supported, size: 64, color: Colors.grey[400]),
+                                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                  child: Icon(Icons.image_not_supported, size: 64, color: Theme.of(context).colorScheme.placeholderIcon),
                                 ),
                               ),
                             )
                           else
                             Container(
                               height: 200,
-                              color: Colors.grey[200],
-                              child: Icon(Icons.image_not_supported, size: 64, color: Colors.grey[400]),
+                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                              child: Icon(Icons.image_not_supported, size: 64, color: Theme.of(context).colorScheme.placeholderIcon),
                             ),
                           Padding(
                             padding: const EdgeInsets.all(20),
@@ -222,10 +236,10 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                   const SizedBox(height: 8),
                                   Text(
                                     _listing!.category!,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.grey[600],
-                                    ),
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Theme.of(context).colorScheme.onSurfaceMuted,
+                                  ),
                                   ),
                                 ],
                                 if (_listing!.description != null && _listing!.description!.isNotEmpty) ...[
@@ -270,16 +284,29 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                                   _listing!.creator!.email,
                                                   style: TextStyle(
                                                     fontSize: 13,
-                                                    color: Colors.grey[600],
+                                                    color: Theme.of(context).colorScheme.onSurfaceMuted,
                                                   ),
                                                 ),
                                               ],
                                             ),
                                           ),
-                                          OutlinedButton.icon(
-                                            onPressed: () => _openChat(context),
-                                            icon: const Icon(Icons.message, size: 18),
-                                            label: const Text('Message'),
+                                          Builder(
+                                            builder: (context) {
+                                              final creatorId = _listing!.creator?.id ?? _listing!.createdBy;
+                                              final myId = context.watch<AuthProvider>().currentUser?.id;
+                                              final isOwnListing = myId != null && creatorId == myId;
+                                              return OutlinedButton.icon(
+                                                onPressed: () => _openChat(context),
+                                                icon: Icon(Icons.message, size: 18, color: isOwnListing ? Colors.white54 : null),
+                                                label: Text(
+                                                  isOwnListing ? 'Your listing' : 'Message',
+                                                  style: TextStyle(color: isOwnListing ? Colors.white54 : null),
+                                                ),
+                                                style: isOwnListing
+                                                    ? OutlinedButton.styleFrom(foregroundColor: Colors.white54)
+                                                    : null,
+                                              );
+                                            },
                                           ),
                                         ],
                                       ),

@@ -151,12 +151,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.logout_outlined),
-                  onPressed: () => auth.signOut(),
-                ),
-              ],
             ),
             SliverToBoxAdapter(
               child: Padding(

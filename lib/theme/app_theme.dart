@@ -5,6 +5,12 @@ const Color _glassWhite = Color(0x0DFFFFFF);
 const Color _glassBorder = Color(0x18FFFFFF);
 const Color _accent = Color(0xFF38BDF8);
 
+/// Theme-aware colors for use across the app.
+extension AppColors on ColorScheme {
+  Color get onSurfaceMuted => Colors.white.withValues(alpha: 0.6);
+  Color get placeholderIcon => Colors.white.withValues(alpha: 0.3);
+}
+
 final ThemeData appTheme = ThemeData(
   useMaterial3: true,
   brightness: Brightness.dark,
@@ -15,6 +21,8 @@ final ThemeData appTheme = ThemeData(
     onPrimary: Colors.black,
     onSecondary: Colors.black,
     onSurface: Colors.white,
+    outline: const Color(0x18FFFFFF),
+    surfaceContainerHighest: const Color(0xFF1E293B),
   ),
   scaffoldBackgroundColor: _darkBlue,
   appBarTheme: const AppBarTheme(

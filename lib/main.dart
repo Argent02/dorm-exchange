@@ -7,6 +7,7 @@ import 'theme/app_theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/grid_columns_provider.dart';
 import 'providers/listings_refresh_provider.dart';
+import 'providers/conversations_refresh_provider.dart';
 import 'auth_gate.dart';
 
 void main() async {
@@ -27,6 +28,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => GridColumnsProvider()),
         ChangeNotifierProvider(create: (_) => ListingsRefreshProvider()),
+        ChangeNotifierProvider(create: (_) => ConversationsRefreshProvider()),
       ],
       child: MaterialApp(
         title: 'Dorm Exchange',

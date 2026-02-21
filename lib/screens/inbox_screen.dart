@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../models/conversation.dart';
 import '../providers/auth_provider.dart';
+import '../providers/conversations_refresh_provider.dart';
 import '../services/api_service.dart';
 import '../widgets/glass_container.dart';
 import 'chat_screen.dart';
@@ -20,11 +21,29 @@ class _InboxScreenState extends State<InboxScreen> {
   List<Conversation> _conversations = [];
   bool _isLoading = true;
   String? _error;
+  ConversationsRefreshProvider? _refreshProvider;
+  bool _listenerAdded = false;
 
   @override
   void initState() {
     super.initState();
     _fetch();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_listenerAdded) {
+      _refreshProvider = context.read<ConversationsRefreshProvider>();
+      _refreshProvider!.addListener(_fetch);
+      _listenerAdded = true;
+    }
+  }
+
+  @override
+  void dispose() {
+    _refreshProvider?.removeListener(_fetch);
+    super.dispose();
   }
 
   Future<void> _fetch() async {
