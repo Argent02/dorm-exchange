@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../models/listing.dart';
@@ -6,8 +7,6 @@ import '../theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/conversations_refresh_provider.dart';
 import '../services/api_service.dart';
-import 'chat_screen.dart';
-
 class ListingDetailScreen extends StatefulWidget {
   final String listingId;
 
@@ -54,11 +53,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
       );
       if (context.mounted) {
         context.read<ConversationsRefreshProvider>().trigger();
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => ChatScreen(conversationId: conv.id),
-          ),
-        );
+        context.push('/chat/${conv.id}');
       }
     } on ApiException catch (e) {
       if (context.mounted) {
@@ -140,7 +135,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
         title: const Text('Listing'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => context.pop(),
         ),
         actions: [
           if (_listing != null)

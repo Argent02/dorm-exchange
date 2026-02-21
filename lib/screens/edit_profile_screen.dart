@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
@@ -50,7 +51,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             name: name,
             phone: _phoneController.text.trim(),
           );
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) context.pop();
     } on ApiException catch (e) {
       if (mounted) setState(() {
         _error = e.message;

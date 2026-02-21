@@ -8,32 +8,37 @@ import 'providers/auth_provider.dart';
 import 'providers/grid_columns_provider.dart';
 import 'providers/listings_refresh_provider.dart';
 import 'providers/conversations_refresh_provider.dart';
-import 'auth_gate.dart';
+import 'router/app_router.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(const MyApp());
+
+  final authProvider = AuthProvider();
+
+  runApp(MyApp(authProvider: authProvider));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final AuthProvider authProvider;
+
+  const MyApp({super.key, required this.authProvider});
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider.value(value: authProvider),
         ChangeNotifierProvider(create: (_) => GridColumnsProvider()),
         ChangeNotifierProvider(create: (_) => ListingsRefreshProvider()),
         ChangeNotifierProvider(create: (_) => ConversationsRefreshProvider()),
       ],
-      child: MaterialApp(
+      child: MaterialApp.router(
         title: 'Dorm Exchange',
         theme: appTheme,
-        home: const AuthGate(),
+        routerConfig: createAppRouter(authProvider),
       ),
     );
   }

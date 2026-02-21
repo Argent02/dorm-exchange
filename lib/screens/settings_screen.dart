@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
@@ -10,8 +11,6 @@ import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
 import '../services/image_upload_service.dart';
 import '../widgets/glass_container.dart';
-import 'edit_profile_screen.dart';
-import 'listing_detail_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -30,36 +29,28 @@ class SettingsScreen extends StatelessWidget {
             icon: Icons.person_outline,
             title: 'Profile',
             subtitle: 'Photo, name, phone number',
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ProfileSettingsScreen()),
-            ),
+            onTap: () => context.push('/profile'),
           ),
           const SizedBox(height: 12),
           _SettingsListTile(
             icon: Icons.swap_horiz,
             title: 'Exchanges',
             subtitle: 'Bought and sold history',
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ExchangesScreen()),
-            ),
+            onTap: () => context.push('/exchanges'),
           ),
           const SizedBox(height: 12),
           _SettingsListTile(
             icon: Icons.bookmark_outline,
             title: 'Saved',
             subtitle: 'Your saved listings',
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const SavedScreen()),
-            ),
+            onTap: () => context.push('/saved'),
           ),
           const SizedBox(height: 12),
           _SettingsListTile(
             icon: Icons.notifications_outlined,
             title: 'Notifications',
             subtitle: 'Notification center',
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const NotificationCenterScreen()),
-            ),
+            onTap: () => context.push('/notifications'),
           ),
         ],
       ),
@@ -174,6 +165,26 @@ class ProfileSettingsScreen extends StatelessWidget {
               style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 14),
             ),
           ),
+          if (user.isVerified)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.verified, size: 18, color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Verified',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           if (user.phone != null && user.phone!.isNotEmpty) ...[
             const SizedBox(height: 8),
             Center(
@@ -224,9 +235,7 @@ class ProfileSettingsScreen extends StatelessWidget {
               leading: Icon(Icons.edit_outlined, color: Theme.of(context).colorScheme.primary),
               title: const Text('Edit profile', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500)),
               trailing: Icon(Icons.chevron_right, color: Colors.white.withValues(alpha: 0.5)),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const EditProfileScreen()),
-              ),
+              onTap: () => context.push('/edit-profile'),
             ),
           ),
           const SizedBox(height: 16),
@@ -509,9 +518,7 @@ class _ExchangeTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       child: InkWell(
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => ListingDetailScreen(listingId: listing.id)),
-        ),
+        onTap: () => context.push('/listing/${listing.id}'),
         borderRadius: BorderRadius.circular(16),
         child: Row(
           children: [
@@ -688,9 +695,7 @@ class _SavedScreenState extends State<SavedScreen> {
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.all(12),
             child: InkWell(
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => ListingDetailScreen(listingId: listing.id)),
-              ).then((_) => _fetch()),
+              onTap: () => context.push('/listing/${listing.id}').then((_) => _fetch()),
               borderRadius: BorderRadius.circular(16),
               child: Row(
                 children: [

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../models/listing.dart';
@@ -7,8 +8,6 @@ import '../providers/conversations_refresh_provider.dart';
 import '../providers/grid_columns_provider.dart';
 import '../services/api_service.dart';
 import '../widgets/glass_container.dart';
-import 'chat_screen.dart';
-
 /// Screen to pick a listing and start a conversation with the seller.
 class SelectListingToMessageScreen extends StatefulWidget {
   const SelectListingToMessageScreen({super.key});
@@ -87,11 +86,7 @@ class _SelectListingToMessageScreenState extends State<SelectListingToMessageScr
       );
       if (mounted) {
         context.read<ConversationsRefreshProvider>().trigger();
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => ChatScreen(conversationId: conv.id),
-          ),
-        );
+        context.push('/chat/${conv.id}');
       }
     } on ApiException catch (e) {
       if (mounted) {

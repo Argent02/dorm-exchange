@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import 'screens/home_screen.dart';
 import 'screens/inbox_screen.dart';
 import 'screens/my_listings_screen.dart';
-import 'screens/create_listing_screen.dart';
 import 'screens/settings_screen.dart';
 import 'widgets/glass_container.dart';
 
@@ -38,7 +38,7 @@ class _MainShellState extends State<MainShell> {
         index: _index,
         children: _screens,
       ),
-      floatingActionButton: (_index == 1 || _index == 2 || _index == 3) ? null : GlassContainer(
+      floatingActionButton: (_index == 1 || _index == 3) ? null : GlassContainer(
         padding: EdgeInsets.zero,
         margin: const EdgeInsets.only(bottom: 24),
         borderRadius: 28,
@@ -70,11 +70,7 @@ class _MainShellState extends State<MainShell> {
   }
 
   void _openCreateListing(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => const CreateListingScreen(),
-      ),
-    );
+    context.push('/create');
   }
 }
 
@@ -98,7 +94,7 @@ class _GlassBottomNav extends StatelessWidget {
             _navItem(context, 0, Icons.home_outlined, Icons.home, 'Home'),
             _navItem(context, 1, Icons.chat_bubble_outline, Icons.chat_bubble, 'Messages'),
             const SizedBox(width: 48),
-            _navItem(context, 2, Icons.inventory_2_outlined, Icons.inventory_2, 'Me'),
+            _navItem(context, 2, Icons.inventory_2_outlined, Icons.inventory_2, 'Listings'),
             _navItem(context, 3, Icons.settings_outlined, Icons.settings, 'Settings'),
           ],
         ),

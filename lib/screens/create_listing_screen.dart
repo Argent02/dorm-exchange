@@ -1,11 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/listings_refresh_provider.dart';
 import '../services/api_service.dart';
 import '../services/image_upload_service.dart';
+import '../theme/app_theme.dart';
 
 class CreateListingScreen extends StatefulWidget {
   const CreateListingScreen({super.key});
@@ -49,7 +51,7 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    Navigator.of(context).pop(); // close bottom sheet
+    context.pop(); // close bottom sheet
 
     try {
       final xfile = await _picker.pickImage(
@@ -135,7 +137,7 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
       );
       if (mounted) {
         context.read<ListingsRefreshProvider>().trigger();
-        Navigator.of(context).pop(true);
+        context.pop(true);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Listing posted!')),
         );
@@ -157,38 +159,79 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
     }
   }
 
+  bool get _hasChanges =>
+      _titleController.text.trim().isNotEmpty ||
+      _descriptionController.text.trim().isNotEmpty ||
+      _priceController.text.trim().isNotEmpty ||
+      _pickedImage != null ||
+      _imageUrl != null ||
+      _category != null;
+
+  Future<bool> _onWillPop() async {
+    if (!_hasChanges) return true;
+    final leave = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Discard changes?'),
+        content: const Text(
+          'You have unsaved changes. Are you sure you want to leave?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Stay'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text('Discard', style: TextStyle(color: Theme.of(ctx).colorScheme.error)),
+          ),
+        ],
+      ),
+    );
+    return leave ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Post a listing'),
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.of(context).pop(),
+    final theme = Theme.of(context);
+
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final leave = await _onWillPop();
+        if (leave && context.mounted) context.pop();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Post a listing'),
+          leading: IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () async {
+              if (await _onWillPop()) {
+                if (context.mounted) context.pop();
+              }
+            },
+          ),
         ),
-      ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            // Photo section
-            const Text(
-              'Photos',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Colors.black54,
+        body: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            children: [
+              Text(
+                'Photos',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceMuted,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.xs),
             if (_pickedImage != null || _imageUrl != null)
               _buildPhotoPreview()
             else
               _buildAddPhotoButton(),
-            const SizedBox(height: 20),
-
-            TextFormField(
+              const SizedBox(height: AppSpacing.lg),
+              TextFormField(
               controller: _titleController,
               decoration: const InputDecoration(
                 labelText: 'Title',
@@ -200,8 +243,8 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
               },
               textCapitalization: TextCapitalization.words,
             ),
-            const SizedBox(height: 16),
-            TextFormField(
+              const SizedBox(height: AppSpacing.md),
+              TextFormField(
               controller: _descriptionController,
               decoration: const InputDecoration(
                 labelText: 'Description (optional)',
@@ -210,8 +253,8 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
               ),
               maxLines: 3,
             ),
-            const SizedBox(height: 16),
-            Row(
+              const SizedBox(height: AppSpacing.md),
+              Row(
               children: [
                 Checkbox(
                   value: _isFree,
@@ -224,7 +267,7 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
               ],
             ),
             if (!_isFree) ...[
-              const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.xs),
               TextFormField(
                 controller: _priceController,
                 decoration: const InputDecoration(
@@ -241,7 +284,7 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                 },
               ),
             ],
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.lg),
             DropdownButtonFormField<String>(
               value: _category,
               decoration: const InputDecoration(labelText: 'Category'),
@@ -255,62 +298,75 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
               onChanged: (v) => setState(() => _category = v),
             ),
             if (_error != null) ...[
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.md),
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(AppSpacing.sm),
                 decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(12),
+                  color: theme.colorScheme.error.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 child: Text(
                   _error!,
-                  style: TextStyle(color: Colors.red.shade700),
+                  style: TextStyle(color: theme.colorScheme.error),
                 ),
               ),
             ],
-            const SizedBox(height: 32),
+            const SizedBox(height: AppSpacing.xxl),
             SizedBox(
               height: 50,
               child: ElevatedButton(
                 onPressed: _isSubmitting ? null : _submit,
                 child: _isSubmitting
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 24,
                         height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: theme.colorScheme.onPrimary,
+                        ),
                       )
                     : const Text('Post listing'),
               ),
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildAddPhotoButton() {
+    final theme = Theme.of(context);
     return InkWell(
       onTap: _isUploading ? null : _showImageSourceSheet,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       child: Container(
         height: 120,
         decoration: BoxDecoration(
-          color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey[300]!),
+          color: theme.colorScheme.surfaceOverlay,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(color: theme.colorScheme.outline),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.add_photo_alternate_outlined, size: 40, color: Colors.grey[600]),
-            const SizedBox(height: 8),
+            Icon(
+              Icons.add_photo_alternate_outlined,
+              size: 40,
+              color: theme.colorScheme.placeholderIcon,
+            ),
+            const SizedBox(height: AppSpacing.xs),
             Text(
               'Add photo',
-              style: TextStyle(color: Colors.grey[700], fontSize: 14),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceMuted,
+              ),
             ),
             Text(
               'Gallery or camera',
-              style: TextStyle(color: Colors.grey[500], fontSize: 12),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.placeholderIcon,
+              ),
             ),
           ],
         ),
@@ -319,21 +375,27 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
   }
 
   Widget _buildPhotoPreview() {
+    final theme = Theme.of(context);
     return Stack(
       children: [
         ClipRRect(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           child: _isUploading
               ? Container(
                   height: 160,
-                  color: Colors.grey[200],
-                  child: const Center(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  child: Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        CircularProgressIndicator(),
-                        SizedBox(height: 8),
-                        Text('Uploading...', style: TextStyle(fontSize: 12)),
+                        const CircularProgressIndicator(),
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          'Uploading...',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceMuted,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -353,24 +415,28 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => Container(
                             height: 160,
-                            color: Colors.grey[200],
-                            child: const Icon(Icons.broken_image, size: 48),
+                            color: theme.colorScheme.surfaceContainerHighest,
+                            child: Icon(
+                              Icons.broken_image,
+                              size: 48,
+                              color: theme.colorScheme.placeholderIcon,
+                            ),
                           ),
                         )
                       : const SizedBox.shrink(),
         ),
         if (!_isUploading)
           Positioned(
-            top: 8,
-            right: 8,
+            top: AppSpacing.xs,
+            right: AppSpacing.xs,
             child: Material(
-              color: Colors.black54,
+              color: Colors.black.withValues(alpha: 0.6),
               shape: const CircleBorder(),
               child: InkWell(
                 onTap: _removePhoto,
                 customBorder: const CircleBorder(),
                 child: const Padding(
-                  padding: EdgeInsets.all(8),
+                  padding: EdgeInsets.all(AppSpacing.xs),
                   child: Icon(Icons.close, color: Colors.white, size: 20),
                 ),
               ),

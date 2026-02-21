@@ -88,7 +88,8 @@ That's it. Everything else is handled automatically by the dev script.
 # Start DB + backend + Flutter on a device
 ./dev.sh macos        # macOS desktop
 ./dev.sh chrome       # Web browser
-./dev.sh iphone       # Physical iPhone (requires .dev.config, see below)
+./dev.sh iphone       # Physical iPhone (wireless ok; auto-detects or use .dev.config)
+./dev.sh iphone-setup # Print wireless iPhone setup guide, open Xcode
 ./dev.sh <device-id>  # Specific device (find IDs via `flutter devices`)
 ```
 
@@ -129,7 +130,9 @@ The backend uses a `.env` file in the `backend/` directory. The dev script creat
 
 The backend validates required variables on startup and prints a clear error if any are missing.
 
-### Testing on a Physical Device
+### Testing on a Physical Device (Including Wireless iPhone)
+
+**Wireless iPhone:** Run `./dev.sh iphone-setup` for a step-by-step guide. You'll need to pair once via USB in Xcode (Window → Devices → Connect via network), then you can run wirelessly. Mac and iPhone must be on the same Wi-Fi.
 
 When running on a physical phone, the app connects to the backend over your local network. The dev scripts handle IP detection automatically.
 
@@ -142,7 +145,7 @@ Then update `_localIp` in `lib/services/api_service.dart`.
 
 ### Physical Device Config (`.dev.config` / `.dev.config.ps1`)
 
-To use `./dev.sh iphone` or `.\dev.ps1 iphone`, create a config file in the project root (gitignored):
+`./dev.sh iphone` auto-detects your iPhone if one is connected. To use a specific device, create a config file in the project root (gitignored):
 
 **macOS / Linux** — `.dev.config`:
 ```bash
@@ -162,6 +165,8 @@ Find your device ID with `flutter devices`.
 # Dev environment (macOS/Linux)
 ./dev.sh              # Start DB + backend
 ./dev.sh macos        # Start everything + Flutter on macOS
+./dev.sh iphone       # Start everything + Flutter on iPhone (wireless)
+./dev.sh iphone-setup # Wireless iPhone setup guide
 ./dev.sh chrome       # Start everything + Flutter on Chrome
 
 # Dev environment (Windows)

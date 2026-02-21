@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
@@ -7,8 +8,6 @@ import '../providers/grid_columns_provider.dart';
 import '../providers/listings_refresh_provider.dart';
 import '../services/api_service.dart';
 import '../widgets/glass_container.dart';
-import 'create_listing_screen.dart';
-import 'listing_detail_screen.dart';
 
 class MyListingsScreen extends StatefulWidget {
   const MyListingsScreen({super.key});
@@ -215,11 +214,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> with SingleTickerPr
               return _MyListingGridTile(
                 listing: listing,
                 columns: cols,
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => ListingDetailScreen(listingId: listing.id),
-                  ),
-                ).then((_) => _fetch()),
+                onTap: () => context.push('/listing/${listing.id}').then((_) => _fetch()),
                 onMarkSold: () => _markStatus(listing, 'sold'),
                 onMarkTaken: () => _markStatus(listing, 'taken'),
                 onRelist: () => _markStatus(listing, 'active', successMessage: 'Relisted'),
@@ -275,9 +270,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> with SingleTickerPr
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const CreateListingScreen()),
-                  ).then((_) => _fetch()),
+                  onTap: () => context.push('/create').then((_) => _fetch()),
                   borderRadius: BorderRadius.circular(16),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,

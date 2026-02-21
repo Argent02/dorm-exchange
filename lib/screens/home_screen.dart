@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../models/listing.dart';
@@ -6,8 +7,10 @@ import '../providers/auth_provider.dart';
 import '../providers/grid_columns_provider.dart';
 import '../providers/listings_refresh_provider.dart';
 import '../services/api_service.dart';
+import '../widgets/empty_state.dart';
+import '../widgets/error_state.dart';
+import '../widgets/filter_chip.dart' show AppFilterChip;
 import '../widgets/glass_container.dart';
-import 'listing_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -220,7 +223,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         children: [
-                          _FilterChip(
+                          AppFilterChip(
                             label: 'All',
                             selected: _categoryFilter == null && _freeOnly == null,
                             onTap: () {
@@ -232,7 +235,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             },
                           ),
                           const SizedBox(width: 8),
-                          _FilterChip(label: 'Free', selected: _freeOnly == true, onTap: () {
+                          AppFilterChip(label: 'Free', selected: _freeOnly == true, onTap: () {
                             setState(() {
                               _freeOnly = true;
                               _categoryFilter = null;
@@ -240,7 +243,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             _fetch();
                           }),
                           const SizedBox(width: 8),
-                          _FilterChip(label: 'Furniture', selected: _categoryFilter == 'furniture', onTap: () {
+                          AppFilterChip(label: 'Furniture', selected: _categoryFilter == 'furniture', onTap: () {
                             setState(() {
                               _categoryFilter = 'furniture';
                               _freeOnly = null;
@@ -248,7 +251,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             _fetch();
                           }),
                           const SizedBox(width: 8),
-                          _FilterChip(label: 'Electronics', selected: _categoryFilter == 'electronics', onTap: () {
+                          AppFilterChip(label: 'Electronics', selected: _categoryFilter == 'electronics', onTap: () {
                             setState(() {
                               _categoryFilter = 'electronics';
                               _freeOnly = null;
@@ -256,7 +259,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             _fetch();
                           }),
                           const SizedBox(width: 8),
-                          _FilterChip(label: 'Books', selected: _categoryFilter == 'books', onTap: () {
+                          AppFilterChip(label: 'Books', selected: _categoryFilter == 'books', onTap: () {
                             setState(() {
                               _categoryFilter = 'books';
                               _freeOnly = null;
@@ -287,13 +290,17 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_error != null && _listings.isEmpty) {
       return SliverFillRemaining(
         hasScrollBody: false,
-        child: _ErrorState(message: _error!, onRetry: _fetch),
+        child: ErrorState(message: _error!, onRetry: _fetch),
       );
     }
     if (_listings.isEmpty) {
       return SliverFillRemaining(
         hasScrollBody: false,
-        child: _EmptyState(),
+        child: EmptyState(
+          icon: Icons.inventory_2_outlined,
+          title: 'No listings yet',
+          subtitle: 'Be the first to post something!',
+        ),
       );
     }
 
@@ -315,11 +322,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 return _ListingGridTile(
                   listing: listing,
                   columns: cols,
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => ListingDetailScreen(listingId: listing.id),
-                    ),
-                  ),
+                  onTap: () => context.push('/listing/${listing.id}'),
                   onSaveTap: () => _onSaveToggle(listing),
                 );
               },
@@ -328,44 +331,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         );
       },
-    );
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _FilterChip({required this.label, required this.selected, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            color: selected ? const Color(0xFF38BDF8).withValues(alpha: 0.25) : Colors.white.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: selected ? const Color(0xFF38BDF8) : Colors.white.withValues(alpha: 0.15),
-              width: 1,
-            ),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-              color: selected ? const Color(0xFF38BDF8) : Colors.white70,
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
@@ -502,70 +467,6 @@ class _ListingGridTile extends StatelessWidget {
     return Container(
       color: Colors.white.withValues(alpha: 0.06),
       child: Icon(Icons.image_not_supported, color: Colors.white.withValues(alpha: 0.3), size: 32),
-    );
-  }
-}
-
-class _ErrorState extends StatelessWidget {
-  final String message;
-  final VoidCallback onRetry;
-
-  const _ErrorState({required this.message, required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.white.withValues(alpha: 0.5)),
-            const SizedBox(height: 16),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.inventory_2_outlined, size: 80, color: Colors.white.withValues(alpha: 0.4)),
-            const SizedBox(height: 24),
-            Text(
-              'No listings yet',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.9),
-                  ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Be the first to post something!',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

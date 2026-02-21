@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../models/conversation.dart';
@@ -6,8 +7,6 @@ import '../providers/auth_provider.dart';
 import '../providers/conversations_refresh_provider.dart';
 import '../services/api_service.dart';
 import '../widgets/glass_container.dart';
-import 'chat_screen.dart';
-import 'select_listing_to_message_screen.dart';
 
 class InboxScreen extends StatefulWidget {
   const InboxScreen({super.key});
@@ -89,11 +88,7 @@ class _InboxScreenState extends State<InboxScreen> {
           IconButton(
             icon: const Icon(Icons.add_comment),
             tooltip: 'New message',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => const SelectListingToMessageScreen(),
-              ),
-            ).then((_) => _fetch()),
+            onPressed: () => context.push('/select-listing').then((_) => _fetch()),
           ),
         ],
       ),
@@ -151,11 +146,7 @@ class _InboxScreenState extends State<InboxScreen> {
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const SelectListingToMessageScreen(),
-                      ),
-                    ).then((_) => _fetch()),
+                    onTap: () => context.push('/select-listing').then((_) => _fetch()),
                     borderRadius: BorderRadius.circular(16),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -190,11 +181,7 @@ class _InboxScreenState extends State<InboxScreen> {
         return _ConversationTile(
           conversation: c,
           myId: userId,
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => ChatScreen(conversationId: c.id),
-            ),
-          ).then((_) => _fetch()),
+          onTap: () => context.push('/chat/${c.id}').then((_) => _fetch()),
         );
       },
     );

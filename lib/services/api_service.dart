@@ -25,11 +25,17 @@ class ApiService {
   //
   // Set your host machine's current IP here for physical device testing.
   // The dev.sh script updates this automatically on each run.
-  static const String _localIp = '10.203.1.67';
+  static const String _localIp = '10.0.0.204';
   static const String _prodUrl = 'http://localhost:3000'; // TODO: replace with production URL
 
   static String get _baseUrl {
-    if (kReleaseMode) return _prodUrl;
+    if (kReleaseMode) {
+      // On physical mobile devices, localhost points to the phone — use host IP for local testing
+      if (_prodUrl.contains('localhost') && (Platform.isIOS || Platform.isAndroid)) {
+        return 'http://$_localIp:3000';
+      }
+      return _prodUrl;
+    }
     if (kIsWeb) return 'http://localhost:3000';
     if (Platform.isAndroid) return 'http://10.0.2.2:3000';
     if (Platform.isIOS) return 'http://$_localIp:3000';

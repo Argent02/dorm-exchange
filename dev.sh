@@ -3,34 +3,155 @@
 # Starts the database, backend, and optionally the Flutter app.
 # Works on macOS and Linux. Handles first-time setup automatically.
 #
-# Usage: ./dev.sh [device]
-#   ./dev.sh              → starts DB + backend only
+# Usage: ./dev.sh [device] [--release|-r]
+#   ./dev.sh              → starts DB + backend + Flutter (prioritizes mobile, prompts if multiple)
 #   ./dev.sh macos        → starts DB + backend + Flutter on macOS
-#   ./dev.sh iphone       → starts DB + backend + Flutter on iPhone
+#   ./dev.sh iphone       → starts DB + backend + Flutter on iPhone (wireless ok)
+#   ./dev.sh --release    → same as above but in release mode (faster, no hot reload)
+#   ./dev.sh iphone -r    → iPhone in release mode
+#   ./dev.sh iphone-setup → prints wireless iPhone setup guide, opens Xcode
 #   ./dev.sh chrome       → starts DB + backend + Flutter on Chrome
 #   ./dev.sh <device-id>  → starts DB + backend + Flutter on a specific device
 
 set -e
+
+# Parse --release / -r from args
+RELEASE_MODE=0
+DEVICE_ARGS=()
+for arg in "$@"; do
+  if [[ "$arg" == "--release" || "$arg" == "-r" ]]; then
+    RELEASE_MODE=1
+  else
+    DEVICE_ARGS+=("$arg")
+  fi
+done
 
 # Load local device config (not tracked by git)
 if [ -f .dev.config ]; then
   source .dev.config
 fi
 
-# Map friendly names to device IDs
-if [ "$1" = "iphone" ]; then
-  if [ -z "$IPHONE_DEVICE_ID" ]; then
-    echo "⚠  No iPhone device ID configured."
-    echo "   Create a .dev.config file in the project root with:"
-    echo ""
-    echo "   IPHONE_DEVICE_ID=\"your-device-id\""
-    echo ""
-    echo "   Find your device ID by running: flutter devices"
-    exit 1
+# Handle iphone-setup before other logic
+if [ "${DEVICE_ARGS[0]:-}" = "iphone-setup" ]; then
+  echo ""
+  echo "┌─────────────────────────────────────────────────────────────────┐"
+  echo "│  Wireless iPhone Setup for DormExchange                          │"
+  echo "└─────────────────────────────────────────────────────────────────┘"
+  echo ""
+  echo "1. Enable Developer Mode on iPhone:"
+  echo "   Settings → Privacy & Security → Developer Mode (turn on, restart if asked)"
+  echo ""
+  echo "2. First-time pairing (USB required once):"
+  echo "   • Connect iPhone to Mac via USB"
+  echo "   • Open Xcode → Window → Devices and Simulators"
+  echo "   • Select your iPhone"
+  echo "   • Enable \"Connect via network\""
+  echo "   • Wait for network icon, then disconnect USB"
+  echo ""
+  echo "3. Ensure Mac and iPhone are on the SAME Wi-Fi network"
+  echo ""
+  echo "4. Your Mac IP is used for the app to reach the backend."
+  echo "   dev.sh auto-updates lib/services/api_service.dart when you run it."
+  echo ""
+  echo "5. Find your device ID: flutter devices"
+  echo "   Optionally add to .dev.config: IPHONE_DEVICE_ID=\"<device-id>\""
+  echo ""
+  if [ "$(uname -s)" = "Darwin" ] && [ -d "/Applications/Xcode.app" ]; then
+    echo "Opening Xcode (go to Window → Devices and Simulators to pair wirelessly)..."
+    open -a Xcode 2>/dev/null || true
+  elif [ "$(uname -s)" = "Darwin" ]; then
+    echo "  (Xcode not found — install from App Store to use Devices window)"
   fi
-  DEVICE="$IPHONE_DEVICE_ID"
+  echo "Run ./dev.sh iphone when ready."
+  echo ""
+  exit 0
+fi
+
+# Map friendly names to device IDs
+# When no device given: auto-detect first available (macos, chrome, simulator, etc.)
+IPHONE_MODE=0
+if [ "${DEVICE_ARGS[0]:-}" = "iphone" ]; then
+  if [ -z "$IPHONE_DEVICE_ID" ]; then
+    # Try to auto-detect first connected iOS device (physical or simulator)
+    DETECTED=$(flutter devices 2>/dev/null | grep -E "iPhone|iPad" | grep -oE '[0-9a-fA-F-]{20,}' | head -1)
+    if [ -n "$DETECTED" ]; then
+      DEVICE="$DETECTED"
+      echo "  (Auto-detected iOS device: $DEVICE)"
+    else
+      echo "⚠  No iPhone device ID configured or detected."
+      echo ""
+      echo "   Option A: Run ./dev.sh iphone-setup for wireless setup guide"
+      echo ""
+      echo "   Option B: Create .dev.config with your device ID:"
+      echo "   IPHONE_DEVICE_ID=\"your-device-id\""
+      echo ""
+      echo "   Find your device ID: flutter devices"
+      exit 1
+    fi
+  else
+    DEVICE="$IPHONE_DEVICE_ID"
+  fi
+  IPHONE_MODE=1
 else
-  DEVICE="${1:-}"
+  DEVICE="${DEVICE_ARGS[0]:-}"
+  if [ -z "$DEVICE" ]; then
+    # No device specified: prioritize mobile (iOS/Android), prompt if multiple
+    RAW_DEVICES=$(flutter devices 2>/dev/null | awk -F' • ' '
+      NF >= 3 {
+        gsub(/^[ \t]+|[ \t]+$/, "", $2);
+        gsub(/^[ \t]+|[ \t]+$/, "", $3);
+        gsub(/^[ \t]+|[ \t]+$/, "", $1);
+        if ($2 != "" && $3 != "") print $2 "|" $3 "|" $1;
+      }
+    ')
+    MOBILE_LIST=()
+    OTHER_LIST=()
+    while IFS='|' read -r id platform name; do
+      [[ -z "$id" ]] && continue
+      if [[ "$platform" == "ios" || "$platform" == *"android"* ]]; then
+        MOBILE_LIST+=("$id|$name")
+      else
+        OTHER_LIST+=("$id|$name")
+      fi
+    done <<< "$RAW_DEVICES"
+    CANDIDATES=()
+    if [[ ${#MOBILE_LIST[@]} -gt 0 ]]; then
+      CANDIDATES=("${MOBILE_LIST[@]}")
+    else
+      CANDIDATES=("${OTHER_LIST[@]}")
+    fi
+    if [[ ${#CANDIDATES[@]} -eq 0 ]]; then
+      DEVICE=""
+    elif [[ ${#CANDIDATES[@]} -eq 1 ]]; then
+      DEVICE=$(echo "${CANDIDATES[0]}" | cut -d'|' -f1)
+      NAME=$(echo "${CANDIDATES[0]}" | cut -d'|' -f2-)
+      echo "  (Selected: $NAME)"
+    else
+      echo ""
+      echo "  Multiple devices available. Choose one:"
+      for i in "${!CANDIDATES[@]}"; do
+        NAME=$(echo "${CANDIDATES[$i]}" | cut -d'|' -f2-)
+        echo "    $((i+1))) $NAME"
+      done
+      echo "    q) Quit (skip launching app)"
+      echo ""
+      read -r -p "  Device [1]: " choice
+      choice=${choice:-1}
+      if [[ "$choice" == "q" || "$choice" == "Q" ]]; then
+        DEVICE=""
+      else
+        idx=$((choice - 1))
+        if [[ $idx -ge 0 && $idx -lt ${#CANDIDATES[@]} ]]; then
+          DEVICE=$(echo "${CANDIDATES[$idx]}" | cut -d'|' -f1)
+          echo "  (Selected: $DEVICE)"
+        else
+          DEVICE=$(echo "${CANDIDATES[0]}" | cut -d'|' -f1)
+          echo "  (Invalid choice, using first: $DEVICE)"
+        fi
+      fi
+    fi
+  fi
+  IPHONE_MODE=0
 fi
 
 # ─── Colors ────────────────────────────────────────────────
@@ -202,12 +323,24 @@ done
 
 # ─── 5. Flutter (optional) ────────────────────────────────
 if [ -n "$DEVICE" ]; then
-  echo -e "${YELLOW}▸ Launching Flutter on device: $DEVICE${NC}"
-  flutter run -d "$DEVICE"
+  if [ "$IPHONE_MODE" = "1" ]; then
+    echo ""
+    echo -e "${YELLOW}▸ iPhone mode: Ensure Mac and iPhone are on same Wi‑Fi.${NC}"
+    echo -e "${YELLOW}  Backend reachable at: http://${LOCAL_IP:-<local-ip>}:3000${NC}"
+    echo ""
+  fi
+  if [ "$RELEASE_MODE" = "1" ]; then
+    echo -e "${YELLOW}▸ Launching Flutter in release mode on device: $DEVICE${NC}"
+    flutter run -d "$DEVICE" --release
+  else
+    echo -e "${YELLOW}▸ Launching Flutter on device: $DEVICE${NC}"
+    flutter run -d "$DEVICE"
+  fi
 else
   echo ""
   echo -e "${GREEN}✓ Dev environment ready!${NC}"
-  echo -e "  Run ${YELLOW}flutter run -d <device>${NC} in another terminal to launch the app."
+  echo -e "  No device detected. Run ${YELLOW}flutter run -d <device>${NC} to launch the app."
+  echo "  Example: ./dev.sh macos  |  ./dev.sh chrome  |  ./dev.sh iphone  |  ./dev.sh iphone -r"
   echo ""
   # Keep backend running in foreground
   wait $BACKEND_PID
