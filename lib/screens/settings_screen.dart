@@ -52,6 +52,15 @@ class SettingsScreen extends StatelessWidget {
             subtitle: 'Notification center',
             onTap: () => context.push('/notifications'),
           ),
+          const SizedBox(height: 20),
+          _SectionHeader(title: 'Preferences'),
+          const SizedBox(height: 8),
+          _SettingsListTile(
+            icon: Icons.settings_suggest_outlined,
+            title: 'Notification settings',
+            subtitle: 'Push alerts, messages, listing updates',
+            onTap: () => context.push('/notification-settings'),
+          ),
         ],
       ),
     );
@@ -73,40 +82,56 @@ class _SettingsListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GlassContainer(
-      padding: const EdgeInsets.all(16),
+    return Material(
+      color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Row(
-          children: [
-            Icon(icon, size: 28, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.white.withValues(alpha: 0.6),
-                    ),
-                  ),
-                ],
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
               ),
-            ),
-            Icon(Icons.chevron_right, color: Colors.white.withValues(alpha: 0.5)),
-          ],
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.white.withValues(alpha: 0.55),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right, size: 20, color: Colors.white.withValues(alpha: 0.4)),
+            ],
+          ),
         ),
       ),
     );
@@ -132,7 +157,10 @@ class ProfileSettingsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profile'),
-        backgroundColor: const Color(0xFF0F172A).withValues(alpha: 0.85),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
       ),
       body: ListView(
         padding: const EdgeInsets.all(20),
@@ -201,6 +229,23 @@ class ProfileSettingsScreen extends StatelessWidget {
               ),
             ),
           ],
+          if (user.dorm != null && user.dorm!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.apartment_outlined, size: 16, color: Colors.white.withValues(alpha: 0.7)),
+                  const SizedBox(width: 6),
+                  Text(
+                    user.dorm!,
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 24),
           GlassContainer(
             padding: EdgeInsets.zero,
@@ -211,6 +256,12 @@ class ProfileSettingsScreen extends StatelessWidget {
                   title: const Text('Email', style: TextStyle(color: Colors.white)),
                   subtitle: Text(user.email, style: TextStyle(color: Colors.white.withValues(alpha: 0.6))),
                 ),
+                if (user.dorm != null && user.dorm!.isNotEmpty)
+                  ListTile(
+                    leading: Icon(Icons.apartment_outlined, color: Colors.white.withValues(alpha: 0.8)),
+                    title: const Text('Dorm', style: TextStyle(color: Colors.white)),
+                    subtitle: Text(user.dorm!, style: TextStyle(color: Colors.white.withValues(alpha: 0.6))),
+                  ),
                 if (user.phone != null && user.phone!.isNotEmpty)
                   ListTile(
                     leading: Icon(Icons.phone_outlined, color: Colors.white.withValues(alpha: 0.8)),
@@ -378,6 +429,7 @@ class _ExchangesScreenState extends State<ExchangesScreen> {
   final ApiService _api = ApiService();
   List<Exchange> _bought = [];
   List<Exchange> _sold = [];
+  List<SoldListingDisplay> _soldListings = [];
   bool _isLoading = true;
   String? _error;
 
@@ -398,6 +450,7 @@ class _ExchangesScreenState extends State<ExchangesScreen> {
         setState(() {
           _bought = result.bought;
           _sold = result.sold;
+          _soldListings = result.soldListings;
           _isLoading = false;
         });
       }
@@ -419,7 +472,10 @@ class _ExchangesScreenState extends State<ExchangesScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Exchanges'),
-        backgroundColor: const Color(0xFF0F172A).withValues(alpha: 0.85),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
       ),
       body: _buildBody(),
     );
@@ -487,7 +543,7 @@ class _ExchangesScreenState extends State<ExchangesScreen> {
             ..._bought.map((e) => _ExchangeTile(exchange: e)),
             const SizedBox(height: 24),
           ],
-          if (_sold.isNotEmpty) ...[
+          if (_sold.isNotEmpty || _soldListings.isNotEmpty) ...[
             Text(
               'Sold',
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
@@ -497,6 +553,7 @@ class _ExchangesScreenState extends State<ExchangesScreen> {
             ),
             const SizedBox(height: 8),
             ..._sold.map((e) => _ExchangeTile(exchange: e)),
+            ..._soldListings.map((l) => _SoldListingTile(listing: l)),
           ],
         ],
       ),
@@ -583,6 +640,82 @@ class _ExchangeTile extends StatelessWidget {
   }
 }
 
+class _SoldListingTile extends StatelessWidget {
+  final SoldListingDisplay listing;
+
+  const _SoldListingTile({required this.listing});
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassContainer(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      child: InkWell(
+        onTap: () => context.push('/listing/${listing.id}'),
+        borderRadius: BorderRadius.circular(16),
+        child: Row(
+          children: [
+            _buildThumbnail(),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    listing.title,
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: Colors.white),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${listing.status ?? 'sold'} • ${_formatDate(listing.updatedAt)}',
+                    style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.6)),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right, color: Colors.white.withValues(alpha: 0.5)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThumbnail() {
+    if (listing.imageUrl != null && listing.imageUrl!.isNotEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.network(
+          listing.imageUrl!,
+          width: 56,
+          height: 56,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _placeholder(),
+        ),
+      );
+    }
+    return _placeholder();
+  }
+
+  Widget _placeholder() {
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(Icons.image_not_supported, color: Colors.white.withValues(alpha: 0.3)),
+    );
+  }
+
+  String _formatDate(DateTime d) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${months[d.month - 1]} ${d.day}, ${d.year}';
+  }
+}
+
 // ─── Saved Screen ───────────────────────────────────────────
 
 class SavedScreen extends StatefulWidget {
@@ -633,7 +766,9 @@ class _SavedScreenState extends State<SavedScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Saved'),
-        backgroundColor: const Color(0xFF0F172A).withValues(alpha: 0.85),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
       ),
       body: _buildBody(),
     );
@@ -830,7 +965,9 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Notifications'),
-        backgroundColor: const Color(0xFF0F172A).withValues(alpha: 0.85),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
         actions: [
           if (unreadCount > 0)
             TextButton(

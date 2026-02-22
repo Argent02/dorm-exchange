@@ -8,6 +8,7 @@ import '../screens/listing_detail_screen.dart';
 import '../screens/select_listing_to_message_screen.dart';
 import '../login_screen.dart';
 import '../main_shell.dart';
+import '../screens/notification_settings_screen.dart';
 import '../screens/settings_screen.dart';
 
 GoRouter createAppRouter(AuthProvider authProvider) {

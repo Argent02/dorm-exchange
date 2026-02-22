@@ -256,7 +256,11 @@ class ApiService {
 
   // ─── Exchange Endpoints ──────────────────────────────────
 
-  Future<({List<Exchange> bought, List<Exchange> sold})> getMyExchanges() async {
+  Future<({
+    List<Exchange> bought,
+    List<Exchange> sold,
+    List<SoldListingDisplay> soldListings,
+  })> getMyExchanges() async {
     final data = await _get('/exchanges');
     final bought = (data['bought'] as List<dynamic>)
         .map((e) => Exchange.fromJson(e as Map<String, dynamic>))
@@ -264,7 +268,11 @@ class ApiService {
     final sold = (data['sold'] as List<dynamic>)
         .map((e) => Exchange.fromJson(e as Map<String, dynamic>))
         .toList();
-    return (bought: bought, sold: sold);
+    final soldListingsRaw = data['soldListings'] as List<dynamic>? ?? [];
+    final soldListings = soldListingsRaw
+        .map((e) => SoldListingDisplay.fromJson(e as Map<String, dynamic>))
+        .toList();
+    return (bought: bought, sold: sold, soldListings: soldListings);
   }
 
   // ─── Saved Endpoints ─────────────────────────────────────

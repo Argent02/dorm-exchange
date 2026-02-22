@@ -50,6 +50,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       await context.read<AuthProvider>().updateProfile(
             name: name,
             phone: _phoneController.text.trim(),
+            dorm: _selectedDorm ?? '',
           );
       if (mounted) context.pop();
     } on ApiException catch (e) {
@@ -124,6 +125,44 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       style: const TextStyle(color: Colors.redAccent, fontSize: 13),
                     ),
                   ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            GlassContainer(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Dorm',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white.withValues(alpha: 0.7),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: _selectedDorm,
+                    decoration: InputDecoration(
+                      hintText: 'Select your residence hall',
+                      hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+                      ),
+                      filled: true,
+                      fillColor: Colors.white.withValues(alpha: 0.05),
+                    ),
+                    dropdownColor: const Color(0xFF1E293B),
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                    items: [
+                      const DropdownMenuItem(value: null, child: Text('None')),
+                      ..._dormOptions.map((d) => DropdownMenuItem(value: d, child: Text(d))),
+                    ],
+                    onChanged: (v) => setState(() => _selectedDorm = v),
+                  ),
                 ],
               ),
             ),
