@@ -11,9 +11,27 @@ A mobile app for students to list, sell, or give away items to other students in
 | Database | PostgreSQL |
 | ORM | Prisma |
 | Auth | Firebase Auth |
-| Messaging | Firebase Realtime DB (planned) |
-| Image Storage | Firebase Storage (planned) |
+| Messaging | PostgreSQL (authoritative) + Firebase RTDB signal stream |
+| Image Storage | Firebase Storage |
 | Hosting | Railway (planned) |
+
+## Current Repository Status
+
+### Implemented and working
+
+- Firebase auth with backend user sync
+- Listings CRUD, status updates, and saved listings flows
+- Conversations/messages with backend-authoritative persistence and RTDB signaling
+- Profile/settings flows, including dorm field support and sold/taken visibility in exchanges
+- Release API base URL hardening via `--dart-define=API_BASE_URL=...`
+- Contract CI checks for Flutter analysis/tests and backend build
+
+### Still pending before broad production/TestFlight rollout
+
+- iOS deployment target warning cleanup
+- Backend automated integration test suite (CI currently enforces build; tests run when present)
+- Final legal/compliance content and public policy URLs
+- Ongoing dependency vulnerability monitoring for unresolved transitive advisories
 
 ## Project Structure
 
@@ -126,9 +144,24 @@ The backend uses a `.env` file in the `backend/` directory. The dev script creat
 |----------|----------|-------------|
 | `DATABASE_URL` | Yes | PostgreSQL connection string. Default for local Docker: `postgresql://postgres:postgres@localhost:5432/dormexchange?schema=public` |
 | `GOOGLE_APPLICATION_CREDENTIALS` | Yes | Path to Firebase service account JSON file (e.g., `./serviceAccountKey.json`) |
+| `NODE_ENV` | No | Runtime environment. Defaults to `development` in local usage. |
 | `PORT` | No | Server port. Defaults to `3000` |
+| `CORS_ORIGIN` | No | Comma-separated allowed origins for production CORS policy. |
 
 The backend validates required variables on startup and prints a clear error if any are missing.
+
+### Release Build API Configuration (Required)
+
+Release builds require an explicit API base URL:
+
+```bash
+flutter build ipa --release --dart-define=API_BASE_URL=https://api.example.com
+flutter build appbundle --release --dart-define=API_BASE_URL=https://api.example.com
+```
+
+Notes:
+- `API_BASE_URL` is required in release mode and must be an absolute non-localhost URL.
+- Debug/local workflows continue to use local network defaults from `ApiService`.
 
 ### Testing on a Physical Device (Including Wireless iPhone)
 
@@ -177,9 +210,15 @@ Find your device ID with `flutter devices`.
 cd backend
 npm run dev          # Start dev server with hot reload
 npm run build        # Compile TypeScript
+npm run test         # Run backend tests (when test script exists)
+npm audit            # Audit backend dependencies
 npm run db:migrate   # Run Prisma migrations
 npm run db:studio    # Open Prisma Studio (visual DB browser)
 npm run db:generate  # Regenerate Prisma client
+
+# Checks
+flutter analyze      # Static analysis for Flutter app
+flutter test         # Flutter test suite (model/contract-focused)
 
 # Database
 docker compose up -d              # Start PostgreSQL (first time)

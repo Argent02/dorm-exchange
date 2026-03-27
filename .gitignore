@@ -68,3 +68,14 @@ ios/Runner/GoogleService-Info.plist
 # Generic secrets
 *.pem
 *.key
+context.md
+context-pending.md
+dashboard.md
+.cursor/
+CONTRIBUTING.md
+ios/Runner/PrivacyInfo.xcprivacy
+DEPLOYMENT_CHECKLIST.md
+PRIVACY_POLICY.md
+TERMS_OF_SERVICE.md
+SECURITY.md
+SUPPORT.md

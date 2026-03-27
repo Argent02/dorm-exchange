@@ -21,7 +21,7 @@ class RtdbService {
   }
 
   static Stream<DatabaseEvent> watchMessages(String conversationId) {
-    return _ref.child('messages').child(conversationId).onChildAdded;
+    return _ref.child('signals').child(conversationId).onChildAdded;
   }
 
   static Future<String> sendMessage(String conversationId, String content) async {
@@ -36,5 +36,15 @@ class RtdbService {
       'createdAt': ServerValue.timestamp,
     });
     return pushRef.key ?? '';
+  }
+
+  /// Emits a lightweight realtime signal after a backend-persisted message is sent.
+  /// We do not treat this payload as the source of truth for message history.
+  static Future<void> signalMessage(String conversationId) async {
+    final signalsRef = _ref.child('signals').child(conversationId).push();
+    await signalsRef.set({
+      'kind': 'message',
+      'updatedAt': ServerValue.timestamp,
+    });
   }
 }

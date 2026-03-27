@@ -1,8 +1,16 @@
 import { Router } from "express";
+import { z } from "zod";
 import prisma from "../lib/prisma.js";
 import { requireAuth, requireUser } from "../middleware/auth.js";
+import { sendError } from "../lib/http.js";
 
 const router = Router();
+const updateMeSchema = z.object({
+  name: z.string().trim().min(1).max(100).optional(),
+  avatarUrl: z.string().url().nullable().optional(),
+  phone: z.string().trim().max(20).nullable().optional(),
+  dorm: z.string().trim().max(100).nullable().optional(),
+});
 
 /**
  * POST /auth/login
@@ -26,7 +34,7 @@ router.post("/login", requireAuth, async (req, res) => {
     res.json({ user });
   } catch (error) {
     console.error("Login error:", error);
-    res.status(500).json({ error: "Failed to log in" });
+    sendError(res, 500, "Failed to log in", "internal_error");
   }
 });
 
@@ -47,14 +55,14 @@ router.get("/me", requireAuth, requireUser, async (req, res) => {
     });
 
     if (!user) {
-      res.status(404).json({ error: "User not found" });
+      sendError(res, 404, "User not found", "not_found");
       return;
     }
 
     res.json({ user });
   } catch (error) {
     console.error("Get me error:", error);
-    res.status(500).json({ error: "Failed to fetch user" });
+    sendError(res, 500, "Failed to fetch user", "internal_error");
   }
 });
 
@@ -64,16 +72,24 @@ router.get("/me", requireAuth, requireUser, async (req, res) => {
  */
 router.patch("/me", requireAuth, requireUser, async (req, res) => {
   try {
-    const body = req.body as Record<string, unknown>;
-    const updates: { name?: string; avatarUrl?: string | null; phone?: string | null } = {};
-    if (typeof body.name === "string" && body.name.trim().length > 0) {
-      updates.name = body.name.trim().slice(0, 100);
+    const parsed = updateMeSchema.safeParse(req.body);
+    if (!parsed.success) {
+      sendError(res, 400, parsed.error.message, "validation_failed");
+      return;
+    }
+    const body = parsed.data;
+    const updates: { name?: string; avatarUrl?: string | null; phone?: string | null; dorm?: string | null } = {};
+    if (typeof body.name === "string" && body.name.length > 0) {
+      updates.name = body.name;
     }
     if (body.avatarUrl !== undefined) {
       updates.avatarUrl = typeof body.avatarUrl === "string" ? body.avatarUrl : null;
     }
     if (body.phone !== undefined) {
       updates.phone = typeof body.phone === "string" ? body.phone.trim().slice(0, 20) || null : null;
+    }
+    if (body.dorm !== undefined) {
+      updates.dorm = typeof body.dorm === "string" ? body.dorm.trim().slice(0, 100) || null : null;
     }
 
     const user = await prisma.user.update({
@@ -84,7 +100,7 @@ router.patch("/me", requireAuth, requireUser, async (req, res) => {
     res.json({ user });
   } catch (error) {
     console.error("Update me error:", error);
-    res.status(500).json({ error: "Failed to update profile" });
+    sendError(res, 500, "Failed to update profile", "internal_error");
   }
 });
 

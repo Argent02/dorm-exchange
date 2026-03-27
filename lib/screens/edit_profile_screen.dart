@@ -13,9 +13,21 @@ class EditProfileScreen extends StatefulWidget {
   State<EditProfileScreen> createState() => _EditProfileScreenState();
 }
 
+const _dormOptions = [
+  'New Residence Hall West',
+  'Hilda Angulo',
+  'New Hall East',
+  'Gilbert Hall',
+  'Grant North',
+  'Stevenson Towers',
+  'Neptune North',
+  'Patterson Hall',
+];
+
 class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
+  String? _selectedDorm;
   bool _isSaving = false;
   String? _error;
 
@@ -25,6 +37,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final user = context.read<AuthProvider>().currentUser;
     _nameController = TextEditingController(text: user?.name ?? '');
     _phoneController = TextEditingController(text: user?.phone ?? '');
+    _selectedDorm = user?.dorm;
   }
 
   @override

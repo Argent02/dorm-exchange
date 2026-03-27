@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import prisma from "../lib/prisma.js";
 import { requireAuth, requireUser } from "../middleware/auth.js";
+import { sendError } from "../lib/http.js";
 
 const router = Router();
 router.use(requireAuth, requireUser);
@@ -14,6 +15,7 @@ const createConversationSchema = z.object({
 const sendMessageSchema = z.object({
   content: z.string().min(1).max(5000),
 });
+const idParamSchema = z.object({ id: z.string().uuid() });
 
 /**
  * GET /conversations
@@ -41,7 +43,7 @@ router.get("/", async (req, res) => {
     res.json({ conversations });
   } catch (error) {
     console.error("List conversations error:", error);
-    res.status(500).json({ error: "Failed to load conversations" });
+    sendError(res, 500, "Failed to load conversations", "internal_error");
   }
 });
 
@@ -54,7 +56,7 @@ router.post("/", async (req, res) => {
   try {
     const parsed = createConversationSchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.message });
+      sendError(res, 400, parsed.error.message, "validation_failed");
       return;
     }
 
@@ -62,7 +64,7 @@ router.post("/", async (req, res) => {
     const initiatorId = req.user!.id;
 
     if (ownerId === initiatorId) {
-      res.status(400).json({ error: "Cannot message yourself" });
+      sendError(res, 400, "Cannot message yourself", "bad_request");
       return;
     }
 
@@ -100,7 +102,7 @@ router.post("/", async (req, res) => {
     res.status(201).json({ conversation });
   } catch (error) {
     console.error("Create conversation error:", error);
-    res.status(500).json({ error: "Failed to start conversation" });
+    sendError(res, 500, "Failed to start conversation", "internal_error");
   }
 });
 
@@ -110,7 +112,12 @@ router.post("/", async (req, res) => {
  */
 router.get("/:id", async (req, res) => {
   try {
-    const { id } = req.params;
+    const parsedParams = idParamSchema.safeParse(req.params);
+    if (!parsedParams.success) {
+      sendError(res, 400, "Invalid conversation id", "bad_request");
+      return;
+    }
+    const { id } = parsedParams.data;
     const userId = req.user!.id;
 
     const conversation = await prisma.conversation.findFirst({
@@ -126,14 +133,14 @@ router.get("/:id", async (req, res) => {
     });
 
     if (!conversation) {
-      res.status(404).json({ error: "Conversation not found" });
+      sendError(res, 404, "Conversation not found", "not_found");
       return;
     }
 
     res.json({ conversation });
   } catch (error) {
     console.error("Get conversation error:", error);
-    res.status(500).json({ error: "Failed to load conversation" });
+    sendError(res, 500, "Failed to load conversation", "internal_error");
   }
 });
 
@@ -143,7 +150,12 @@ router.get("/:id", async (req, res) => {
  */
 router.get("/:id/messages", async (req, res) => {
   try {
-    const { id } = req.params;
+    const parsedParams = idParamSchema.safeParse(req.params);
+    if (!parsedParams.success) {
+      sendError(res, 400, "Invalid conversation id", "bad_request");
+      return;
+    }
+    const { id } = parsedParams.data;
     const userId = req.user!.id;
 
     const conversation = await prisma.conversation.findFirst({
@@ -154,7 +166,7 @@ router.get("/:id/messages", async (req, res) => {
     });
 
     if (!conversation) {
-      res.status(404).json({ error: "Conversation not found" });
+      sendError(res, 404, "Conversation not found", "not_found");
       return;
     }
 
@@ -169,7 +181,7 @@ router.get("/:id/messages", async (req, res) => {
     res.json({ messages });
   } catch (error) {
     console.error("Get messages error:", error);
-    res.status(500).json({ error: "Failed to load messages" });
+    sendError(res, 500, "Failed to load messages", "internal_error");
   }
 });
 
@@ -179,12 +191,17 @@ router.get("/:id/messages", async (req, res) => {
  */
 router.post("/:id/messages", async (req, res) => {
   try {
-    const { id } = req.params;
+    const parsedParams = idParamSchema.safeParse(req.params);
+    if (!parsedParams.success) {
+      sendError(res, 400, "Invalid conversation id", "bad_request");
+      return;
+    }
+    const { id } = parsedParams.data;
     const userId = req.user!.id;
 
     const parsed = sendMessageSchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.message });
+      sendError(res, 400, parsed.error.message, "validation_failed");
       return;
     }
 
@@ -196,7 +213,7 @@ router.post("/:id/messages", async (req, res) => {
     });
 
     if (!conversation) {
-      res.status(404).json({ error: "Conversation not found" });
+      sendError(res, 404, "Conversation not found", "not_found");
       return;
     }
 
@@ -219,7 +236,7 @@ router.post("/:id/messages", async (req, res) => {
     res.status(201).json({ message });
   } catch (error) {
     console.error("Send message error:", error);
-    res.status(500).json({ error: "Failed to send message" });
+    sendError(res, 500, "Failed to send message", "internal_error");
   }
 });
 

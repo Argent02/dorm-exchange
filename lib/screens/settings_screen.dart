@@ -53,7 +53,14 @@ class SettingsScreen extends StatelessWidget {
             onTap: () => context.push('/notifications'),
           ),
           const SizedBox(height: 20),
-          _SectionHeader(title: 'Preferences'),
+          Text(
+            'Preferences',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.white.withValues(alpha: 0.6),
+            ),
+          ),
           const SizedBox(height: 8),
           _SettingsListTile(
             icon: Icons.settings_suggest_outlined,

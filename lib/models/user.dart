@@ -5,6 +5,7 @@ class AppUser {
   final String? name;
   final String? avatarUrl;
   final String? phone;
+  final String? dorm;
   final String role;
   final bool isVerified;
   final int reportCount;

@@ -73,6 +73,10 @@ GoRouter createAppRouter(AuthProvider authProvider) {
             path: 'notifications',
             builder: (_, __) => const NotificationCenterScreen(),
           ),
+          GoRoute(
+            path: 'notification-settings',
+            builder: (_, __) => const NotificationSettingsScreen(),
+          ),
         ],
       ),
     ],

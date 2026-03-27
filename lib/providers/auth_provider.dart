@@ -89,12 +89,14 @@ class AuthProvider extends ChangeNotifier {
     String? name,
     String? avatarUrl,
     String? phone,
+    String? dorm,
   }) async {
     if (_currentUser == null) return;
     _currentUser = await _api.updateMe(
       name: name,
       avatarUrl: avatarUrl,
       phone: phone,
+      dorm: dorm,
     );
     notifyListeners();
   }

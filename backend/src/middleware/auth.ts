@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import { firebaseAuth } from "../lib/firebase.js";
 import prisma from "../lib/prisma.js";
 import type { User } from "../generated/prisma/client.js";
+import { sendError } from "../lib/http.js";
 
 // Extend Express Request to include authenticated user
 declare global {
@@ -27,7 +28,7 @@ export async function requireAuth(
   const authHeader = req.headers.authorization;
 
   if (!authHeader?.startsWith("Bearer ")) {
-    res.status(401).json({ error: "Missing or malformed Authorization header" });
+    sendError(res, 401, "Missing or malformed Authorization header", "unauthorized");
     return;
   }
 
@@ -39,7 +40,7 @@ export async function requireAuth(
     req.firebaseEmail = decoded.email;
     next();
   } catch (error) {
-    res.status(401).json({ error: "Invalid or expired token" });
+    sendError(res, 401, "Invalid or expired token", "unauthorized");
     return;
   }
 }
@@ -55,7 +56,7 @@ export async function requireUser(
   next: NextFunction
 ): Promise<void> {
   if (!req.firebaseUid || !req.firebaseEmail) {
-    res.status(401).json({ error: "Authentication required" });
+    sendError(res, 401, "Authentication required", "unauthorized");
     return;
   }
 
@@ -73,7 +74,7 @@ export async function requireUser(
     next();
   } catch (error) {
     console.error("Error loading user:", error);
-    res.status(500).json({ error: "Internal server error" });
+    sendError(res, 500, "Internal server error", "internal_error");
     return;
   }
 }

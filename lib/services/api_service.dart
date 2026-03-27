@@ -25,16 +25,38 @@ class ApiService {
   //
   // Set your host machine's current IP here for physical device testing.
   // The dev.sh script updates this automatically on each run.
+  //
+  // Release builds MUST provide API_BASE_URL via --dart-define.
+  // Example:
+  // flutter build ipa --release --dart-define=API_BASE_URL=https://api.example.com
   static const String _localIp = '10.0.0.204';
-  static const String _prodUrl = 'http://localhost:3000'; // TODO: replace with production URL
+  static const String _releaseApiBaseUrl = String.fromEnvironment('API_BASE_URL');
+
+  static void _validateReleaseApiBaseUrl() {
+    if (_releaseApiBaseUrl.isEmpty) {
+      throw StateError(
+        'Missing API_BASE_URL for release build. Provide --dart-define=API_BASE_URL=https://your-api-host.',
+      );
+    }
+
+    final uri = Uri.tryParse(_releaseApiBaseUrl);
+    if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
+      throw StateError(
+        'Invalid API_BASE_URL for release build: "$_releaseApiBaseUrl". Expected an absolute URL.',
+      );
+    }
+
+    if (uri.host == 'localhost' || uri.host == '127.0.0.1') {
+      throw StateError(
+        'API_BASE_URL cannot point to localhost in release builds.',
+      );
+    }
+  }
 
   static String get _baseUrl {
     if (kReleaseMode) {
-      // On physical mobile devices, localhost points to the phone — use host IP for local testing
-      if (_prodUrl.contains('localhost') && (Platform.isIOS || Platform.isAndroid)) {
-        return 'http://$_localIp:3000';
-      }
-      return _prodUrl;
+      _validateReleaseApiBaseUrl();
+      return _releaseApiBaseUrl;
     }
     if (kIsWeb) return 'http://localhost:3000';
     if (Platform.isAndroid) return 'http://10.0.2.2:3000';
@@ -130,16 +152,18 @@ class ApiService {
     return AppUser.fromJson(data['user'] as Map<String, dynamic>);
   }
 
-  /// Updates the current user's profile (name, avatarUrl, phone).
+  /// Updates the current user's profile (name, avatarUrl, phone, dorm).
   Future<AppUser> updateMe({
     String? name,
     String? avatarUrl,
     String? phone,
+    String? dorm,
   }) async {
     final body = <String, dynamic>{};
     if (name != null) body['name'] = name;
     if (avatarUrl != null) body['avatarUrl'] = avatarUrl;
     if (phone != null) body['phone'] = phone;
+    if (dorm != null) body['dorm'] = dorm.isEmpty ? null : dorm;
     final data = await _patch('/auth/me', body: body.isNotEmpty ? body : null);
     return AppUser.fromJson(data['user'] as Map<String, dynamic>);
   }

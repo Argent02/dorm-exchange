@@ -3,6 +3,7 @@ import { z } from "zod";
 import prisma from "../lib/prisma.js";
 import { requireAuth, requireUser } from "../middleware/auth.js";
 import { ListingStatus } from "../generated/prisma/client.js";
+import { sendError } from "../lib/http.js";
 
 const router = Router();
 
@@ -35,6 +36,7 @@ const updateListingSchema = z.object({
 const updateStatusSchema = z.object({
   status: z.enum(["active", "sold", "taken", "deleted"]),
 });
+const idParamSchema = z.object({ id: z.string().uuid() });
 
 // ─── Routes ──────────────────────────────────────────────
 
@@ -117,7 +119,7 @@ router.get("/", async (req, res) => {
     });
   } catch (error) {
     console.error("List listings error:", error);
-    res.status(500).json({ error: "Failed to fetch listings" });
+    sendError(res, 500, "Failed to fetch listings", "internal_error");
   }
 });
 
@@ -127,10 +129,16 @@ router.get("/", async (req, res) => {
  */
 router.get("/:id", async (req, res) => {
   try {
+    const parsedParams = idParamSchema.safeParse(req.params);
+    if (!parsedParams.success) {
+      sendError(res, 400, "Invalid listing id", "bad_request");
+      return;
+    }
+    const { id } = parsedParams.data;
     const userId = req.user!.id;
     const [listing, saved] = await Promise.all([
       prisma.listing.findUnique({
-        where: { id: req.params.id },
+        where: { id },
         include: {
           creator: {
             select: { id: true, name: true, email: true, joinDate: true, firebaseUid: true },
@@ -139,20 +147,20 @@ router.get("/:id", async (req, res) => {
       }),
       prisma.savedListing.findUnique({
         where: {
-          userId_listingId: { userId, listingId: req.params.id },
+          userId_listingId: { userId, listingId: id },
         },
       }),
     ]);
 
     if (!listing || listing.status === "deleted") {
-      res.status(404).json({ error: "Listing not found" });
+      sendError(res, 404, "Listing not found", "not_found");
       return;
     }
 
     res.json({ listing: { ...listing, isSaved: !!saved } });
   } catch (error) {
     console.error("Get listing error:", error);
-    res.status(500).json({ error: "Failed to fetch listing" });
+    sendError(res, 500, "Failed to fetch listing", "internal_error");
   }
 });
 
@@ -164,10 +172,7 @@ router.post("/", async (req, res) => {
   const parsed = createListingSchema.safeParse(req.body);
 
   if (!parsed.success) {
-    res.status(400).json({
-      error: "Validation failed",
-      details: parsed.error.flatten().fieldErrors,
-    });
+    sendError(res, 400, "Validation failed", "validation_failed");
     return;
   }
 
@@ -192,7 +197,7 @@ router.post("/", async (req, res) => {
     res.status(201).json({ listing });
   } catch (error) {
     console.error("Create listing error:", error);
-    res.status(500).json({ error: "Failed to create listing" });
+    sendError(res, 500, "Failed to create listing", "internal_error");
   }
 });
 
@@ -204,31 +209,34 @@ router.put("/:id", async (req, res) => {
   const parsed = updateListingSchema.safeParse(req.body);
 
   if (!parsed.success) {
-    res.status(400).json({
-      error: "Validation failed",
-      details: parsed.error.flatten().fieldErrors,
-    });
+    sendError(res, 400, "Validation failed", "validation_failed");
     return;
   }
 
   try {
+    const parsedParams = idParamSchema.safeParse(req.params);
+    if (!parsedParams.success) {
+      sendError(res, 400, "Invalid listing id", "bad_request");
+      return;
+    }
+    const { id } = parsedParams.data;
     // Check ownership
     const existing = await prisma.listing.findUnique({
-      where: { id: req.params.id },
+      where: { id },
     });
 
     if (!existing || existing.status === "deleted") {
-      res.status(404).json({ error: "Listing not found" });
+      sendError(res, 404, "Listing not found", "not_found");
       return;
     }
 
     if (existing.createdBy !== req.user!.id) {
-      res.status(403).json({ error: "You can only edit your own listings" });
+      sendError(res, 403, "You can only edit your own listings", "forbidden");
       return;
     }
 
     const listing = await prisma.listing.update({
-      where: { id: req.params.id },
+      where: { id },
       data: parsed.data,
       include: {
         creator: {
@@ -240,7 +248,7 @@ router.put("/:id", async (req, res) => {
     res.json({ listing });
   } catch (error) {
     console.error("Update listing error:", error);
-    res.status(500).json({ error: "Failed to update listing" });
+    sendError(res, 500, "Failed to update listing", "internal_error");
   }
 });
 
@@ -252,37 +260,40 @@ router.patch("/:id/status", async (req, res) => {
   const parsed = updateStatusSchema.safeParse(req.body);
 
   if (!parsed.success) {
-    res.status(400).json({
-      error: "Validation failed",
-      details: parsed.error.flatten().fieldErrors,
-    });
+    sendError(res, 400, "Validation failed", "validation_failed");
     return;
   }
 
   try {
+    const parsedParams = idParamSchema.safeParse(req.params);
+    if (!parsedParams.success) {
+      sendError(res, 400, "Invalid listing id", "bad_request");
+      return;
+    }
+    const { id } = parsedParams.data;
     const existing = await prisma.listing.findUnique({
-      where: { id: req.params.id },
+      where: { id },
     });
 
     if (!existing || existing.status === "deleted") {
-      res.status(404).json({ error: "Listing not found" });
+      sendError(res, 404, "Listing not found", "not_found");
       return;
     }
 
     if (existing.createdBy !== req.user!.id) {
-      res.status(403).json({ error: "You can only update your own listings" });
+      sendError(res, 403, "You can only update your own listings", "forbidden");
       return;
     }
 
     const listing = await prisma.listing.update({
-      where: { id: req.params.id },
+      where: { id },
       data: { status: parsed.data.status as ListingStatus },
     });
 
     res.json({ listing });
   } catch (error) {
     console.error("Update status error:", error);
-    res.status(500).json({ error: "Failed to update listing status" });
+    sendError(res, 500, "Failed to update listing status", "internal_error");
   }
 });
 

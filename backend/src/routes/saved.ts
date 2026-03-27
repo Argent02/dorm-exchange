@@ -1,9 +1,12 @@
 import { Router } from "express";
+import { z } from "zod";
 import prisma from "../lib/prisma.js";
 import { requireAuth, requireUser } from "../middleware/auth.js";
+import { sendError } from "../lib/http.js";
 
 const router = Router();
 router.use(requireAuth, requireUser);
+const listingIdParamSchema = z.object({ listingId: z.string().uuid() });
 
 /** Convert Prisma listing to plain JSON-serializable object (handles Decimal, Date). */
 function listingToJson(l: {
@@ -71,7 +74,7 @@ router.get("/", async (req, res) => {
       errStr.includes("saved_listings") || errStr.includes("does not exist") || errStr.includes("P1014")
         ? "Saved listings table not found. Run: npx prisma migrate deploy"
         : "Failed to load saved listings";
-    res.status(500).json({ error: message });
+    sendError(res, 500, message, "internal_error");
   }
 });
 
@@ -82,7 +85,21 @@ router.get("/", async (req, res) => {
 router.post("/:listingId", async (req, res) => {
   try {
     const userId = req.user!.id;
-    const { listingId } = req.params;
+    const parsedParams = listingIdParamSchema.safeParse(req.params);
+    if (!parsedParams.success) {
+      sendError(res, 400, "Invalid listing id", "bad_request");
+      return;
+    }
+    const { listingId } = parsedParams.data;
+
+    const listing = await prisma.listing.findUnique({
+      where: { id: listingId },
+      select: { id: true, status: true },
+    });
+    if (!listing || listing.status === "deleted") {
+      sendError(res, 404, "Listing not found", "not_found");
+      return;
+    }
 
     await prisma.savedListing.upsert({
       where: {
@@ -95,7 +112,7 @@ router.post("/:listingId", async (req, res) => {
     res.status(201).json({ saved: true });
   } catch (error) {
     console.error("Save listing error:", error);
-    res.status(500).json({ error: "Failed to save listing" });
+    sendError(res, 500, "Failed to save listing", "internal_error");
   }
 });
 
@@ -106,7 +123,12 @@ router.post("/:listingId", async (req, res) => {
 router.delete("/:listingId", async (req, res) => {
   try {
     const userId = req.user!.id;
-    const { listingId } = req.params;
+    const parsedParams = listingIdParamSchema.safeParse(req.params);
+    if (!parsedParams.success) {
+      sendError(res, 400, "Invalid listing id", "bad_request");
+      return;
+    }
+    const { listingId } = parsedParams.data;
 
     await prisma.savedListing.deleteMany({
       where: { userId, listingId },
@@ -115,7 +137,7 @@ router.delete("/:listingId", async (req, res) => {
     res.json({ saved: false });
   } catch (error) {
     console.error("Unsave listing error:", error);
-    res.status(500).json({ error: "Failed to unsave listing" });
+    sendError(res, 500, "Failed to unsave listing", "internal_error");
   }
 });
 

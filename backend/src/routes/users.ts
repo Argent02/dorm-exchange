@@ -1,11 +1,14 @@
 import { Router } from "express";
+import { z } from "zod";
 import prisma from "../lib/prisma.js";
 import { requireAuth, requireUser } from "../middleware/auth.js";
+import { sendError } from "../lib/http.js";
 
 const router = Router();
 
 // All user routes require authentication
 router.use(requireAuth, requireUser);
+const userIdParamSchema = z.object({ id: z.string().uuid() });
 
 /**
  * GET /users/me
@@ -31,14 +34,14 @@ router.get("/me", async (req, res) => {
     });
 
     if (!user) {
-      res.status(404).json({ error: "User not found" });
+      sendError(res, 404, "User not found", "not_found");
       return;
     }
 
     res.json({ user });
   } catch (error) {
     console.error("Get current user error:", error);
-    res.status(500).json({ error: "Failed to fetch user profile" });
+    sendError(res, 500, "Failed to fetch user profile", "internal_error");
   }
 });
 
@@ -48,8 +51,14 @@ router.get("/me", async (req, res) => {
  */
 router.get("/:id", async (req, res) => {
   try {
+    const parsedParams = userIdParamSchema.safeParse(req.params);
+    if (!parsedParams.success) {
+      sendError(res, 400, "Invalid user id", "bad_request");
+      return;
+    }
+
     const user = await prisma.user.findUnique({
-      where: { id: req.params.id },
+      where: { id: parsedParams.data.id },
       select: {
         id: true,
         name: true,
@@ -70,14 +79,14 @@ router.get("/:id", async (req, res) => {
     });
 
     if (!user) {
-      res.status(404).json({ error: "User not found" });
+      sendError(res, 404, "User not found", "not_found");
       return;
     }
 
     res.json({ user });
   } catch (error) {
     console.error("Get user error:", error);
-    res.status(500).json({ error: "Failed to fetch user" });
+    sendError(res, 500, "Failed to fetch user", "internal_error");
   }
 });
 

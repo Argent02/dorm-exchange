@@ -70,6 +70,41 @@ class ExchangeListing {
   }
 }
 
+/// A sold/taken listing that has no Exchange record (marked sold in My Listings).
+class SoldListingDisplay {
+  final String id;
+  final String title;
+  final String? imageUrl;
+  final bool isFree;
+  final double? price;
+  final String? status;
+  final DateTime updatedAt;
+
+  SoldListingDisplay({
+    required this.id,
+    required this.title,
+    this.imageUrl,
+    required this.isFree,
+    this.price,
+    this.status,
+    required this.updatedAt,
+  });
+
+  factory SoldListingDisplay.fromJson(Map<String, dynamic> json) {
+    return SoldListingDisplay(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      imageUrl: json['imageUrl'] as String?,
+      isFree: json['isFree'] as bool,
+      price: json['price'] != null
+          ? (json['price'] is String ? double.tryParse(json['price'] as String) : (json['price'] as num).toDouble())
+          : null,
+      status: json['status'] as String?,
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+    );
+  }
+}
+
 class ExchangeUser {
   final String id;
   final String? name;

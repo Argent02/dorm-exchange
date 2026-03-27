@@ -31,7 +31,6 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _isSending = false;
   DateTime? _newestMessageTime;
   StreamSubscription<dynamic>? _rtdbSubscription;
-  final Set<String> _seenRtdbIds = {};
 
   @override
   void initState() {
@@ -95,30 +94,30 @@ class _ChatScreenState extends State<ChatScreen> {
     RtdbService.ensureConversation(widget.conversationId, initiatorUid, ownerUid).then((_) {
       if (!mounted) return;
       _rtdbSubscription = RtdbService.watchMessages(widget.conversationId).listen((event) {
-        final key = event.snapshot.key;
-        if (key == null) return;
-        if (_seenRtdbIds.contains(key)) return;
-
-        final data = event.snapshot.value;
-        if (data is! Map) return;
-
-        final map = Map<dynamic, dynamic>.from(data);
-        final msg = ConversationMessage.fromRtdb(key, map);
-
-        if (_newestMessageTime != null && msg.createdAt.isBefore(_newestMessageTime!)) return;
-        _seenRtdbIds.add(key);
-
-        if (mounted) {
-          setState(() {
-            _messages = [..._messages, msg];
-            if (_newestMessageTime == null || msg.createdAt.isAfter(_newestMessageTime!)) {
-              _newestMessageTime = msg.createdAt;
-            }
-          });
-          _scrollToBottom();
-        }
+        // RTDB event acts as a realtime signal; backend remains the source of truth.
+        _refreshMessages();
       });
     });
+  }
+
+  Future<void> _refreshMessages() async {
+    try {
+      final msgs = await _api.getMessages(widget.conversationId);
+      if (!mounted) return;
+
+      DateTime? newest;
+      for (final m in msgs) {
+        if (newest == null || m.createdAt.isAfter(newest)) newest = m.createdAt;
+      }
+
+      setState(() {
+        _messages = msgs;
+        _newestMessageTime = newest;
+      });
+      _scrollToBottom();
+    } catch (_) {
+      // Keep current UI state if refresh fails; a later signal/manual retry can recover.
+    }
   }
 
   void _scrollToBottom() {
@@ -141,28 +140,21 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() => _isSending = true);
 
     try {
-      final rtdbKey = await RtdbService.sendMessage(widget.conversationId, text);
-      _seenRtdbIds.add(rtdbKey);
-
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      final optimisticMsg = ConversationMessage(
-        id: rtdbKey,
-        content: text,
-        senderId: '',
-        senderUid: uid,
-        createdAt: DateTime.now(),
-        sender: null,
-      );
+      final persisted = await _api.sendMessage(widget.conversationId, text);
 
       if (mounted) {
         setState(() {
-          _messages = [..._messages, optimisticMsg];
+          _messages = [..._messages, persisted];
+          if (_newestMessageTime == null || persisted.createdAt.isAfter(_newestMessageTime!)) {
+            _newestMessageTime = persisted.createdAt;
+          }
           _isSending = false;
         });
         _scrollToBottom();
       }
 
-      await _api.sendMessage(widget.conversationId, text);
+      // Best-effort realtime signal after backend persistence succeeds.
+      await RtdbService.signalMessage(widget.conversationId);
     } on ApiException catch (e) {
       if (mounted) {
         setState(() => _isSending = false);

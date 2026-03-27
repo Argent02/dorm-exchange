@@ -1,9 +1,12 @@
 import { Router } from "express";
+import { z } from "zod";
 import prisma from "../lib/prisma.js";
 import { requireAuth, requireUser } from "../middleware/auth.js";
+import { sendError } from "../lib/http.js";
 
 const router = Router();
 router.use(requireAuth, requireUser);
+const idParamSchema = z.object({ id: z.string().uuid() });
 
 /**
  * GET /notifications
@@ -20,7 +23,7 @@ router.get("/", async (req, res) => {
     res.json({ notifications });
   } catch (error) {
     console.error("Get notifications error:", error);
-    res.status(500).json({ error: "Failed to load notifications" });
+    sendError(res, 500, "Failed to load notifications", "internal_error");
   }
 });
 
@@ -30,20 +33,25 @@ router.get("/", async (req, res) => {
  */
 router.patch("/:id/read", async (req, res) => {
   try {
+    const parsedParams = idParamSchema.safeParse(req.params);
+    if (!parsedParams.success) {
+      sendError(res, 400, "Invalid notification id", "bad_request");
+      return;
+    }
     const notif = await prisma.notification.updateMany({
-      where: { id: req.params.id, userId: req.user!.id },
+      where: { id: parsedParams.data.id, userId: req.user!.id },
       data: { isRead: true },
     });
 
     if (notif.count === 0) {
-      res.status(404).json({ error: "Notification not found" });
+      sendError(res, 404, "Notification not found", "not_found");
       return;
     }
 
     res.json({ read: true });
   } catch (error) {
     console.error("Mark read error:", error);
-    res.status(500).json({ error: "Failed to update notification" });
+    sendError(res, 500, "Failed to update notification", "internal_error");
   }
 });
 
@@ -61,7 +69,7 @@ router.post("/read-all", async (req, res) => {
     res.json({ read: true });
   } catch (error) {
     console.error("Mark all read error:", error);
-    res.status(500).json({ error: "Failed to update notifications" });
+    sendError(res, 500, "Failed to update notifications", "internal_error");
   }
 });
 
