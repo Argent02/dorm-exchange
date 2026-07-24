@@ -286,7 +286,7 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
             ],
             const SizedBox(height: AppSpacing.lg),
             DropdownButtonFormField<String>(
-              value: _category,
+              initialValue: _category,
               decoration: const InputDecoration(labelText: 'Category'),
               items: [
                 const DropdownMenuItem(value: null, child: Text('Select category')),

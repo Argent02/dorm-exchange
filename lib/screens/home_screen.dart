@@ -103,24 +103,32 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       if (listing.isSaved) {
         await _api.unsaveListing(listing.id);
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Removed from saved'), behavior: SnackBarBehavior.floating),
         );
+        }
       } else {
         await _api.saveListing(listing.id);
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Saved to your list'), behavior: SnackBarBehavior.floating),
         );
+        }
       }
       _fetch();
     } on ApiException catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.message), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating),
       );
+      }
     } catch (_) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Could not update saved status'), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating),
       );
+      }
     }
   }
 

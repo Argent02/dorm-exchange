@@ -68,6 +68,26 @@ router.post("/", async (req, res) => {
       return;
     }
 
+    if (listingId) {
+      const listing = await prisma.listing.findUnique({
+        where: { id: listingId },
+        select: { id: true, createdBy: true, status: true },
+      });
+      if (!listing || listing.status === "deleted") {
+        sendError(res, 404, "Listing not found", "not_found");
+        return;
+      }
+      if (listing.createdBy !== ownerId) {
+        sendError(
+          res,
+          400,
+          "ownerId does not match the listing seller",
+          "listing_owner_mismatch"
+        );
+        return;
+      }
+    }
+
     const existing = await prisma.conversation.findFirst({
       where: {
         initiatorId,

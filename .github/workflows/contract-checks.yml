@@ -20,6 +20,57 @@ jobs:
       - name: Install Flutter dependencies
         run: flutter pub get
 
+      - name: Generate CI stub Firebase config
+        # lib/firebase_options.dart is intentionally gitignored (it's generated
+        # locally via `flutterfire configure` and contains project-specific
+        # values). `flutter analyze` still needs *a* file at this import path
+        # to resolve lib/main.dart, so we generate a throwaway stub here. It is
+        # never committed and contains no real project data.
+        run: |
+          cat > lib/firebase_options.dart <<'EOF'
+          // CI-ONLY STUB — generated fresh on every workflow run, never committed.
+          // Real values are produced locally via `flutterfire configure` and are
+          // intentionally gitignored (see .gitignore). This stub exists only so
+          // `flutter analyze` can resolve the import in lib/main.dart; it is never
+          // used at runtime and contains no real project data.
+          import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
+          import 'package:flutter/foundation.dart'
+              show defaultTargetPlatform, kIsWeb, TargetPlatform;
+
+          class DefaultFirebaseOptions {
+            static FirebaseOptions get currentPlatform {
+              if (kIsWeb) {
+                throw UnsupportedError('CI stub: web not configured.');
+              }
+              switch (defaultTargetPlatform) {
+                case TargetPlatform.android:
+                  return android;
+                case TargetPlatform.iOS:
+                  return ios;
+                default:
+                  throw UnsupportedError('CI stub: platform not configured.');
+              }
+            }
+
+            static const FirebaseOptions android = FirebaseOptions(
+              apiKey: 'ci-stub-not-a-real-key',
+              appId: 'ci-stub-app-id',
+              messagingSenderId: 'ci-stub-sender-id',
+              projectId: 'ci-stub-project',
+              storageBucket: 'ci-stub.appspot.com',
+            );
+
+            static const FirebaseOptions ios = FirebaseOptions(
+              apiKey: 'ci-stub-not-a-real-key',
+              appId: 'ci-stub-app-id',
+              messagingSenderId: 'ci-stub-sender-id',
+              projectId: 'ci-stub-project',
+              storageBucket: 'ci-stub.appspot.com',
+              iosBundleId: 'com.example.ci-stub',
+            );
+          }
+          EOF
+
       - name: Flutter analyze
         run: flutter analyze
 
@@ -43,8 +94,19 @@ jobs:
       - name: Install backend dependencies
         run: npm ci
 
+      - name: Generate Prisma client
+        # `npm run build` (tsc) needs the generated client's types on disk,
+        # and it's gitignored (src/generated/), so every fresh checkout —
+        # including CI — must regenerate it before building. `prisma generate`
+        # only reads the schema/config to emit client code; it never opens a
+        # database connection, so a placeholder DATABASE_URL is sufficient and
+        # no real database or secret is needed in this job.
+        run: npx prisma generate
+        env:
+          DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci_placeholder?schema=public"
+
       - name: TypeScript build
         run: npm run build
 
-      - name: Backend tests (if present)
-        run: npm run test --if-present
+      - name: Backend tests
+        run: npm run test

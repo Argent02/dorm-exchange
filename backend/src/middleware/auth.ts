@@ -3,6 +3,7 @@ import { firebaseAuth } from "../lib/firebase.js";
 import prisma from "../lib/prisma.js";
 import type { User } from "../generated/prisma/client.js";
 import { sendError } from "../lib/http.js";
+import { isAllowedEmailDomain } from "../lib/allowedEmailDomains.js";
 
 // Extend Express Request to include authenticated user
 declare global {
@@ -36,6 +37,21 @@ export async function requireAuth(
 
   try {
     const decoded = await firebaseAuth.verifyIdToken(token);
+
+    // Enforce the student-email-domain policy on every authenticated request,
+    // not just at signup — this is the server-side source of truth. The
+    // Flutter client's ".edu" check is a UI convenience only and is not
+    // trusted here.
+    if (!isAllowedEmailDomain(decoded.email)) {
+      sendError(
+        res,
+        403,
+        "This app is only available to students with an approved school email address.",
+        "invalid_school_email"
+      );
+      return;
+    }
+
     req.firebaseUid = decoded.uid;
     req.firebaseEmail = decoded.email;
     next();

@@ -127,7 +127,32 @@ class ApiService {
   }
 
   Map<String, dynamic> _handleResponse(http.Response response) {
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    final raw = response.body;
+    if (raw.trim().isEmpty) {
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return <String, dynamic>{};
+      }
+      throw ApiException(response.statusCode, 'Empty response from server');
+    }
+
+    dynamic decoded;
+    try {
+      decoded = jsonDecode(raw);
+    } catch (_) {
+      throw ApiException(
+        response.statusCode,
+        'Invalid JSON response from server',
+      );
+    }
+
+    if (decoded is! Map<String, dynamic>) {
+      throw ApiException(
+        response.statusCode,
+        'Unexpected response format from server',
+      );
+    }
+
+    final body = decoded;
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return body;
@@ -331,6 +356,42 @@ class ApiService {
 
   Future<void> markAllNotificationsRead() async {
     await _post('/notifications/read-all');
+  }
+
+  Future<({
+    bool pushEnabled,
+    bool newMessages,
+    bool listingUpdates,
+  })> getNotificationPreferences() async {
+    final data = await _get('/notifications/preferences');
+    final prefs = data['preferences'] as Map<String, dynamic>;
+    return (
+      pushEnabled: prefs['pushEnabled'] as bool? ?? true,
+      newMessages: prefs['newMessages'] as bool? ?? true,
+      listingUpdates: prefs['listingUpdates'] as bool? ?? true,
+    );
+  }
+
+  Future<({
+    bool pushEnabled,
+    bool newMessages,
+    bool listingUpdates,
+  })> updateNotificationPreferences({
+    bool? pushEnabled,
+    bool? newMessages,
+    bool? listingUpdates,
+  }) async {
+    final body = <String, dynamic>{};
+    if (pushEnabled != null) body['pushEnabled'] = pushEnabled;
+    if (newMessages != null) body['newMessages'] = newMessages;
+    if (listingUpdates != null) body['listingUpdates'] = listingUpdates;
+    final data = await _patch('/notifications/preferences', body: body);
+    final prefs = data['preferences'] as Map<String, dynamic>;
+    return (
+      pushEnabled: prefs['pushEnabled'] as bool? ?? true,
+      newMessages: prefs['newMessages'] as bool? ?? true,
+      listingUpdates: prefs['listingUpdates'] as bool? ?? true,
+    );
   }
 
   Future<dynamic> _delete(String path) async {

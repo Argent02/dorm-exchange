@@ -380,6 +380,7 @@ class _EditProfilePhotoButtonState extends State<_EditProfilePhotoButton> {
 
   Future<void> _pickAndUpload() async {
     if (_isUploading) return;
+    final authProvider = context.read<AuthProvider>();
     final picker = ImagePicker();
     final xfile = await picker.pickImage(source: ImageSource.gallery, maxWidth: 512, imageQuality: 85);
     if (xfile == null || !mounted) return;
@@ -388,7 +389,7 @@ class _EditProfilePhotoButtonState extends State<_EditProfilePhotoButton> {
     try {
       final file = File(xfile.path);
       final url = await ImageUploadService().uploadProfileImage(file);
-      await context.read<AuthProvider>().updateProfile(avatarUrl: url);
+      await authProvider.updateProfile(avatarUrl: url);
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -462,15 +463,19 @@ class _ExchangesScreenState extends State<ExchangesScreen> {
         });
       }
     } on ApiException catch (e) {
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _error = e.message;
         _isLoading = false;
       });
+      }
     } catch (_) {
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _error = 'Could not load exchanges';
         _isLoading = false;
       });
+      }
     }
   }
 
@@ -751,20 +756,26 @@ class _SavedScreenState extends State<SavedScreen> {
     });
     try {
       final list = await _api.getSavedListings();
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _listings = list;
         _isLoading = false;
       });
+      }
     } on ApiException catch (e) {
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _error = e.message;
         _isLoading = false;
       });
+      }
     } catch (_) {
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _error = 'Could not load saved listings';
         _isLoading = false;
       });
+      }
     }
   }
 
@@ -933,20 +944,26 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
     });
     try {
       final list = await _api.getNotifications();
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _notifications = list;
         _isLoading = false;
       });
+      }
     } on ApiException catch (e) {
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _error = e.message;
         _isLoading = false;
       });
+      }
     } catch (_) {
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _error = 'Could not load notifications';
         _isLoading = false;
       });
+      }
     }
   }
 

@@ -7,7 +7,9 @@ type ErrorCode =
   | "not_found"
   | "conflict"
   | "validation_failed"
-  | "internal_error";
+  | "internal_error"
+  | "listing_owner_mismatch"
+  | "invalid_school_email";
 
 /**
  * Sends a standardized API error response while preserving legacy `error` string.

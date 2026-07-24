@@ -70,10 +70,12 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
     try {
       if (_listing!.isSaved) {
         await _api.unsaveListing(_listing!.id);
-        if (mounted) setState(() {
+        if (mounted) {
+          setState(() {
           _listing = _listing!.copyWith(isSaved: false);
           _saveInProgress = false;
         });
+        }
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Removed from saved'), behavior: SnackBarBehavior.floating),
@@ -81,10 +83,12 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
         }
       } else {
         await _api.saveListing(_listing!.id);
-        if (mounted) setState(() {
+        if (mounted) {
+          setState(() {
           _listing = _listing!.copyWith(isSaved: true);
           _saveInProgress = false;
         });
+        }
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Saved to your list'), behavior: SnackBarBehavior.floating),
@@ -111,20 +115,26 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
   Future<void> _fetch() async {
     try {
       final listing = await _api.getListing(widget.listingId);
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _listing = listing;
         _isLoading = false;
       });
+      }
     } on ApiException catch (e) {
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _error = e.message;
         _isLoading = false;
       });
+      }
     } catch (_) {
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _error = 'Could not load listing';
         _isLoading = false;
       });
+      }
     }
   }
 
@@ -201,7 +211,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                     decoration: BoxDecoration(
-                                      color: Theme.of(context).colorScheme.secondary.withOpacity(0.2),
+                                      color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.2),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Text(
@@ -252,7 +262,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                       child: Row(
                                         children: [
                                           CircleAvatar(
-                                            backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                                            backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
                                             child: Text(
                                               (_listing!.creator!.name ?? _listing!.creator!.email)
                                                   .substring(0, 1)

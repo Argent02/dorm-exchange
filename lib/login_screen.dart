@@ -148,14 +148,27 @@ class _LoginScreenState extends State<LoginScreen> {
             TextButton(
               onPressed: () async {
                 final email = emailCtrl.text.trim();
-                if (email.isNotEmpty) {
-                  final messenger = ScaffoldMessenger.of(context);
+                if (email.isEmpty) return;
+                final messenger = ScaffoldMessenger.of(context);
+                try {
                   await FirebaseAuth.instance
                       .sendPasswordResetEmail(email: email);
+                  if (!context.mounted) return;
                   messenger.showSnackBar(
                     const SnackBar(
-                        content: Text('Password reset email sent.')),
+                      content: Text('Password reset email sent.'),
+                    ),
                   );
+                } on FirebaseAuthException catch (e) {
+                  if (!context.mounted) return;
+                  setState(() {
+                    error = e.message ?? 'Could not send reset email.';
+                  });
+                } catch (_) {
+                  if (!context.mounted) return;
+                  setState(() {
+                    error = 'Network error. Try again.';
+                  });
                 }
               },
               child: const Text('Forgot password?'),

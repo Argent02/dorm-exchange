@@ -38,6 +38,9 @@ model User {
   avatarUrl   String?  @map("avatar_url") @db.Text
   phone       String?  @db.VarChar(20)
   dorm        String?  @db.VarChar(100)
+  notifPushEnabled    Boolean  @default(true) @map("notif_push_enabled")
+  notifNewMessages    Boolean  @default(true) @map("notif_new_messages")
+  notifListingUpdates Boolean  @default(true) @map("notif_listing_updates")
   role        Role     @default(student)
   isVerified  Boolean  @default(false) @map("is_verified")
   reportCount Int      @default(0) @map("report_count")

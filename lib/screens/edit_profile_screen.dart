@@ -67,15 +67,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           );
       if (mounted) context.pop();
     } on ApiException catch (e) {
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _error = e.message;
         _isSaving = false;
       });
+      }
     } catch (_) {
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _error = 'Failed to update profile';
         _isSaving = false;
       });
+      }
     }
   }
 
@@ -157,7 +161,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: _selectedDorm,
+                    initialValue: _selectedDorm,
                     decoration: InputDecoration(
                       hintText: 'Select your residence hall',
                       hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),

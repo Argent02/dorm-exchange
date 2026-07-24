@@ -23,13 +23,14 @@ A mobile app for students to list, sell, or give away items to other students in
 - Listings CRUD, status updates, and saved listings flows
 - Conversations/messages with backend-authoritative persistence and RTDB signaling
 - Profile/settings flows, including dorm field support and sold/taken visibility in exchanges
+- Server-synced notification preferences with local cache fallback
 - Release API base URL hardening via `--dart-define=API_BASE_URL=...`
-- Contract CI checks for Flutter analysis/tests and backend build
+- Contract CI checks for Flutter analysis/tests, backend build, and backend tests
+- Backend Vitest integration test suite for core auth/listing/conversation/exchange routes
 
 ### Still pending before broad production/TestFlight rollout
 
 - iOS deployment target warning cleanup
-- Backend automated integration test suite (CI currently enforces build; tests run when present)
 - Final legal/compliance content and public policy URLs
 - Ongoing dependency vulnerability monitoring for unresolved transitive advisories
 
@@ -146,7 +147,7 @@ The backend uses a `.env` file in the `backend/` directory. The dev script creat
 | `GOOGLE_APPLICATION_CREDENTIALS` | Yes | Path to Firebase service account JSON file (e.g., `./serviceAccountKey.json`) |
 | `NODE_ENV` | No | Runtime environment. Defaults to `development` in local usage. |
 | `PORT` | No | Server port. Defaults to `3000` |
-| `CORS_ORIGIN` | No | Comma-separated allowed origins for production CORS policy. |
+| `CORS_ORIGIN` | Required in production | Comma-separated allowed origins for production CORS policy. Optional in local development. |
 
 The backend validates required variables on startup and prints a clear error if any are missing.
 
@@ -210,7 +211,7 @@ Find your device ID with `flutter devices`.
 cd backend
 npm run dev          # Start dev server with hot reload
 npm run build        # Compile TypeScript
-npm run test         # Run backend tests (when test script exists)
+npm run test         # Run backend Vitest integration tests
 npm audit            # Audit backend dependencies
 npm run db:migrate   # Run Prisma migrations
 npm run db:studio    # Open Prisma Studio (visual DB browser)

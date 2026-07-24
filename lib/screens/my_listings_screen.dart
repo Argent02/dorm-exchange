@@ -137,7 +137,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> with SingleTickerPr
     return Scaffold(
       appBar: AppBar(
         title: const Text('Me'),
-        backgroundColor: const Color(0xFF0F172A).withOpacity(0.85),
+        backgroundColor: const Color(0xFF0F172A).withValues(alpha: 0.85),
         bottom: (_isLoading && _listings.isEmpty) || (_error != null && _listings.isEmpty)
             ? null
             : TabBar(
@@ -175,9 +175,9 @@ class _MyListingsScreenState extends State<MyListingsScreen> with SingleTickerPr
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.error_outline, size: 64, color: Colors.white.withOpacity(0.5)),
+                          Icon(Icons.error_outline, size: 64, color: Colors.white.withValues(alpha: 0.5)),
                           const SizedBox(height: 16),
-                          Text(_error!, textAlign: TextAlign.center, style: TextStyle(color: Colors.white.withOpacity(0.8))),
+                          Text(_error!, textAlign: TextAlign.center, style: TextStyle(color: Colors.white.withValues(alpha: 0.8))),
                           const SizedBox(height: 16),
                           ElevatedButton(onPressed: _fetch, child: const Text('Retry')),
                         ],
@@ -387,7 +387,7 @@ class _MyListingGridTile extends StatelessWidget {
                       icon: Container(
                         padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.4),
+                          color: Colors.black.withValues(alpha: 0.4),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(Icons.more_vert, size: 18, color: Colors.white),
@@ -414,7 +414,7 @@ class _MyListingGridTile extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.6),
+                          color: Colors.black.withValues(alpha: 0.6),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -461,8 +461,8 @@ class _MyListingGridTile extends StatelessWidget {
 
   Widget _placeholder() {
     return Container(
-      color: Colors.white.withOpacity(0.06),
-      child: Icon(Icons.image_not_supported, color: Colors.white.withOpacity(0.3), size: 32),
+      color: Colors.white.withValues(alpha: 0.06),
+      child: Icon(Icons.image_not_supported, color: Colors.white.withValues(alpha: 0.3), size: 32),
     );
   }
 }

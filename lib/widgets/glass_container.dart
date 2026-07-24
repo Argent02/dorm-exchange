@@ -26,7 +26,7 @@ class GlassContainer extends StatelessWidget {
         border: Border.all(color: const Color(0x18FFFFFF), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
@@ -40,7 +40,7 @@ class GlassContainer extends StatelessWidget {
             padding: padding,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(borderRadius),
-              color: Colors.white.withOpacity(0.05),
+              color: Colors.white.withValues(alpha: 0.05),
             ),
             child: child,
           ),

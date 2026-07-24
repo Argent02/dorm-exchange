@@ -62,7 +62,6 @@ router.get("/:id", async (req, res) => {
       select: {
         id: true,
         name: true,
-        email: true,
         joinDate: true,
         isVerified: true,
         listings: {

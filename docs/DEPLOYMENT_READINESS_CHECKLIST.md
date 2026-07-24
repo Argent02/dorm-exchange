@@ -50,7 +50,7 @@ Use this checklist before shipping to production and before App Store submission
 ## 7) Testing and Quality Gates
 
 - [ ] Run Flutter static checks and tests.
-- [ ] Add backend API smoke/integration tests for core routes.
+- [ ] Run backend Vitest integration tests for core routes.
 - [ ] Run staging end-to-end checks for auth, listings, chat, and profile.
 - [ ] Validate rollback path and runbook.
 
